@@ -62,7 +62,7 @@ This roadmap sequences platform work so that every phase produces a usable, test
 
 **Artifact cleanup verification:** PR #15 adds Flyway V4 expiry/cleanup metadata, tracked presigned URL expiry, a periodic worker, multipart abort, idempotent object deletion and retry of failed cleanup. [Push CI Run 66](https://github.com/samsonnjaji/neuromorphic-robot-console/actions/runs/43713949230) and [PR CI Run 67](https://github.com/samsonnjaji/neuromorphic-robot-console/actions/runs/43713953804) passed the full workflow, including Kotlin/API tests, PostgreSQL migration/persistence/cleanup tests, RustFS integration, schema/Compose validation and Android debug build. GitGuardian checks passed.
 
-**Current gate:** merge PR #15, then ask the user to pull `main` into Cursor. The combined local smoke test should apply Flyway V4, start PostgreSQL/RustFS, verify a single-PUT upload/download SHA-256 round trip, and confirm the cleanup worker aborts a deliberately expired pending upload without touching verified objects. Preserve the existing PostgreSQL volume and host port 5435.
+**Current gate:** PR #15 is merged at `e4c945f6aa9f8eaccfc816da48ac48ca92675e3e`. Ask the user to pull the updated `main` into Cursor. The combined local smoke test should apply Flyway V4, start PostgreSQL/RustFS, verify a single-PUT upload/download SHA-256 round trip, and confirm the cleanup worker aborts a deliberately expired pending upload without touching verified objects. Preserve the existing PostgreSQL volume and host port 5435.
 
 **Exit criteria:** storage and cleanup pass CI and the local V4 smoke test. Then proceed to the read-only ROS 2/MCAP edge gateway and one real sensor recording; verified-object retention remains a separate future milestone.
 
