@@ -70,13 +70,11 @@ jobs:
             ln -s android-37.0 "$SDK_ROOT/platforms/android-37"
           fi
 
-      - name: Set up Gradle
+      - name: Set up Gradle from the checked-in wrapper
         uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '9.7.0'
 
       - name: Run core, desktop and platform API tests
-        run: gradle :nrc-core:jvmTest :composeApp:jvmTest :composeApp:compileKotlinJvm :platform-api:test
+        run: ./gradlew :nrc-core:jvmTest :composeApp:jvmTest :composeApp:compileKotlinJvm :platform-api:test
 
       - name: Build Android application
-        run: gradle :androidApp:assembleDebug
+        run: ./gradlew :androidApp:assembleDebug
