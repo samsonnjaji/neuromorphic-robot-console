@@ -1,7 +1,7 @@
 # NRC Platform Architecture
 
-**Status:** Target architecture, accepted and being implemented in stages  
-**Current baseline:** Kotlin Multiplatform core + Android and desktop simulator clients  
+**Status:** Target architecture, accepted and being implemented in validated stages  
+**Current baseline:** Kotlin Multiplatform core, Android/desktop simulator clients, Ktor API MVP and PostgreSQL experiment metadata  
 **Architecture principle:** one shared robotics intelligence and experiment model, multiple clients and deployment modes.
 
 ## 1. Product boundary
@@ -55,7 +55,7 @@ The diagram is the target architecture, not a claim that all services already ex
 
 ### A. NRC Core — shared intelligence and experiment logic
 
-**Preferred implementation:** Kotlin Multiplatform.
+**Implementation:** Kotlin Multiplatform.
 
 Responsibilities:
 - Canonical domain models and versioned experiment definitions.
@@ -72,28 +72,33 @@ Rules:
 - Keep source timestamps, sequence IDs, model identity and dataset provenance.
 - Separate measured values from synthetic or estimated values.
 
-**Current state:** the independent `core/nrc-core` Kotlin Multiplatform module has been created. It contains the shared telemetry/domain models, stream validation, safety-envelope logic, mission recording, robustness evaluation and transport interfaces. It has no Compose, database, network-client or ROS 2 dependency. JVM core tests and the Android application build pass in CI.
+**Current state:** `core/nrc-core` contains shared telemetry/domain models, stream validation, safety-envelope logic, mission recording, robustness evaluation and transport interfaces. It has no Compose, database, network-client or ROS 2 dependency. Core JVM tests pass in CI.
 
-The existing `composeApp` remains the Compose presentation/application module and currently contains the demo telemetry source and dashboard wiring. More use-case interfaces and further domain/application separation can be introduced as the platform API is built.
+The existing `composeApp` remains the Compose presentation/application module and currently contains the demo telemetry source and dashboard wiring.
 
 ### B. NRC Platform API — shared backend
 
-**Preferred implementation:** Kotlin/JVM with Ktor.
+**Implementation:** Kotlin/JVM with Ktor.
 
-Responsibilities:
-- Versioned REST API for users, organisations, devices, experiments and reports.
-- WebSocket endpoints for live telemetry and experiment status.
-- Authentication and role-based authorisation.
-- Device registration and scoped device credentials.
-- Experiment metadata and manifest persistence.
-- Audit events and tenant boundaries.
-- Upload/download coordination for large recordings.
+**Implemented local MVP:**
+- `GET /api/v1/health`.
+- `GET /api/v1/experiments`.
+- `POST /api/v1/experiments`.
+- `GET /api/v1/experiments/{experimentId}`.
+- `POST /api/v1/robots/{robotId}/telemetry` for versioned telemetry ingestion.
+- `WS /api/v1/robots/{robotId}/stream` for live telemetry fan-out.
+- Typed request validation, sequence validation and structured error responses.
+- In-memory repository for tests and no-database development.
+- PostgreSQL repository for durable experiment metadata, HikariCP connection pooling and Flyway migrations.
+- Local PostgreSQL service definition in `deploy/local/compose.yaml`.
 
-The backend is the shared entry point for Android, desktop and web clients. The clients must not connect directly to the database or inference workers.
+The clients must not connect directly to databases or inference workers.
+
+**Not implemented yet:** user/device authentication, organisation/tenant isolation, audit events, PostgreSQL-backed telemetry history, recording uploads, object storage, rate limits and production deployment hardening. Do not expose this unauthenticated MVP to a public network.
 
 ### C. NRC Edge Gateway — robot connectivity
 
-**Preferred implementation:** a separate ROS 2 process, initially Python or C++ according to driver and deployment needs.
+**Planned implementation:** separate ROS 2 process, initially Python or C++ according to driver and deployment needs.
 
 Responsibilities:
 - Subscribe to configured ROS 2 sensor and state topics.
@@ -109,7 +114,7 @@ The first gateway is read-only. Motion commands and remote actuation are explici
 
 ### D. NRC Inference Runtime — model execution
 
-**Preferred implementation:** a separate Python service.
+**Planned implementation:** separate Python service.
 
 Responsibilities:
 - Load conventional and spiking perception models.
@@ -119,8 +124,6 @@ Responsibilities:
 - Provide hardware-specific measurement adapters when supported.
 
 Potential runtimes: PyTorch, ONNX Runtime, SNN frameworks and hardware-specific neuromorphic SDKs. These are integration choices to validate, not all committed dependencies.
-
-The Kotlin core orchestrates and compares experiments; it does not need to reimplement every ML framework.
 
 ### E. Clients — purpose-specific interfaces
 
@@ -134,16 +137,14 @@ Android and desktop currently share a Kotlin Multiplatform Compose codebase. The
 
 ## 4. Data and storage architecture
 
-Use the right storage for each data type:
-
-- **PostgreSQL:** users, organisations, device registry, experiment manifests, model/dataset metadata, report indexes and audit events.
-- **S3-compatible object storage:** large MCAP/ROS bag recordings, image/video sequences, benchmark artifacts and exported reports.
-- **Local edge buffer:** temporary recording chunks and queued telemetry when offline.
+- **PostgreSQL:** currently stores experiment metadata. Target scope also includes users, organisations, device registry, manifests, model/dataset metadata, report indexes and audit events.
+- **S3-compatible object storage:** planned for large MCAP/ROS bag recordings, image/video sequences, benchmark artifacts and exported reports.
+- **Local edge buffer:** planned for temporary recording chunks and queued telemetry when offline.
 - **Client cache:** limited recent state and metadata; never the canonical experiment record.
 
-Do not place high-volume raw event-camera streams into ordinary relational rows or push unbounded event payloads through a dashboard WebSocket. Use recording/chunk upload and stream compact telemetry summaries or bounded windows.
+Do not place high-volume raw event-camera streams into ordinary relational rows or push unbounded event payloads through a dashboard WebSocket. Use recording/chunk upload and object storage for large artifacts; stream compact telemetry summaries or bounded windows.
 
-The first local development deployment can use Docker Compose with PostgreSQL and a local S3-compatible object store. Cloud hosting is optional, not required for the competition demo.
+The current local development setup starts PostgreSQL with Docker Compose. API migration runs automatically at startup when `NRC_DATABASE_URL` is configured.
 
 ## 5. API and integration boundaries
 
@@ -158,30 +159,29 @@ The first local development deployment can use Docker Compose with PostgreSQL an
 - Use chunked or object-storage uploads for large sensor recordings.
 - Never expose database credentials or inference-worker credentials to clients.
 
-### Initial endpoint proposal
+### Implemented API routes
 
 | Endpoint | Purpose |
 |---|---|
 | `GET /api/v1/health` | Service health |
-| `GET /api/v1/robots` | Robots visible to the authenticated user |
-| `GET /api/v1/robots/{robotId}` | Robot metadata and status |
-| `GET /api/v1/robots/{robotId}/stream` | WebSocket telemetry stream |
-| `POST /api/v1/experiments` | Create an experiment |
-| `GET /api/v1/experiments/{experimentId}` | Read experiment and manifest |
-| `POST /api/v1/experiments/{experimentId}/runs` | Request an evaluation run |
-| `GET /api/v1/experiments/{experimentId}/reports` | List reports |
-| `POST /api/v1/recordings/uploads` | Start a recording upload |
+| `GET /api/v1/experiments` | List recent experiment metadata |
+| `POST /api/v1/experiments` | Create experiment metadata |
+| `GET /api/v1/experiments/{experimentId}` | Retrieve experiment metadata |
+| `POST /api/v1/robots/{robotId}/telemetry` | Validate and ingest a telemetry snapshot |
+| `WS /api/v1/robots/{robotId}/stream` | Subscribe to live telemetry snapshots |
 
-These are proposed v1 routes; the backend has not been implemented.
+### Planned API routes
+
+Robot registry, authenticated users/organisations, experiment run orchestration, reports, recording upload coordination, model registry and dataset registry will be added in subsequent milestones.
 
 ### Versioned contracts
 
-The v1 telemetry envelope and experiment manifest are stored under `schemas/`. Positive and negative fixtures are checked by `scripts/validate_schemas.py` in GitHub Actions. This verifies the JSON contracts; it does not yet mean a live API server is enforcing them.
+The v1 telemetry envelope and experiment manifest are stored under `schemas/`. Positive and negative fixtures are checked by `scripts/validate_schemas.py` in GitHub Actions. The Ktor API also decodes the typed Kotlin serialization envelope and applies stream/schema-version/sequence checks. The JSON Schema documents remain the cross-language wire-contract reference.
 
 ## 6. Deployment modes
 
 ### Local laboratory mode
-A lab runs NRC API, database, object storage and model workers on a workstation or local server. Robot data can remain on the lab network. Internet access is not required for the core workflow once dependencies and models are available.
+A lab runs NRC API, PostgreSQL, object storage and model workers on a workstation or local server. Robot data can remain on the lab network. Internet access is not required for the core workflow once dependencies and models are available.
 
 ### Hybrid mode
 The edge gateway and raw recordings remain on-site. Experiment metadata and selected reports synchronize to a central service.
@@ -205,38 +205,24 @@ All three modes use the same experiment contracts and client-facing API.
 
 Any future control capability requires a separate threat model, authenticated command protocol, robot-side speed and geofence limits, watchdog, fail-safe state, physical emergency-stop circuit and independent validation. A user-interface emergency-stop button is not a certified safety function.
 
-## 8. Repository evolution
-
-The repository currently uses `core/nrc-core` for shared logic and `composeApp` / `androidApp` for the existing clients. It should evolve toward the following logical structure. Do not move existing source files in a large unreviewed change.
+## 8. Repository layout
 
 ```text
 neuromorphic-robot-console/
-├── core/
-│   └── nrc-core/                 # Kotlin Multiplatform domain/experiment SDK
-├── composeApp/                   # Existing shared Compose presentation + desktop
-├── androidApp/                   # Existing Android application shell
-├── clients/
-│   └── web/                      # Browser client (planned)
-├── services/
-│   ├── platform-api/             # Ktor REST/WebSocket backend (planned)
-│   └── inference-runtime/        # Python model execution workers (planned)
-├── edge/
-│   └── ros2-gateway/             # Read-only ROS 2 and recording adapter (planned)
-├── schemas/
-│   ├── telemetry-envelope.v1.schema.json
-│   └── experiment-manifest.v1.schema.json
-├── deploy/
-│   ├── local/
-│   └── cloud/
-├── docs/
-│   ├── ADR/
-│   └── ...
-└── scripts/
+├── core/nrc-core/                 # Kotlin Multiplatform domain/experiment SDK
+├── composeApp/                    # Existing shared Compose presentation + desktop
+├── androidApp/                    # Existing Android application shell
+├── services/platform-api/         # Ktor API + PostgreSQL repository
+├── deploy/local/                  # Local PostgreSQL Compose setup
+├── schemas/                       # Versioned JSON contracts and fixtures
+├── scripts/                       # Schema validation
+├── clients/web/                   # Browser client (planned)
+├── services/inference-runtime/    # Python model execution workers (planned)
+├── edge/ros2-gateway/              # Read-only ROS 2 adapter (planned)
+└── docs/                           # Architecture, ADRs, roadmap and handoff
 ```
 
 ## 9. Quality gates
-
-Every milestone must preserve these conditions:
 
 1. Android and desktop builds remain green.
 2. Domain and experiment tests run without physical robot hardware.
@@ -246,19 +232,24 @@ Every milestone must preserve these conditions:
 6. Large recordings are handled as files/chunks, not unbounded UI messages.
 7. No actuation path exists in the initial release.
 8. Local-only deployment remains possible.
+9. PostgreSQL persistence and migration behavior are integration-tested.
+10. No local Cursor test handoff occurs until CI is green and local run instructions are committed.
 
 ## 10. Current implementation versus target
 
 | Capability | Status |
 |---|---|
-| Independent Kotlin Multiplatform `nrc-core` module | Implemented and CI-verified |
+| Independent Kotlin Multiplatform `nrc-core` module | Implemented |
 | Android/desktop Compose clients | Implemented foundation |
 | Simulator, sensor views and mission replay | Implemented |
 | Synthetic Environment Robustness Lab | Implemented |
 | In-memory experiment provenance manifest | Implemented |
-| Telemetry and manifest JSON schemas + CI fixtures | Implemented and CI-verified |
-| Ktor API and identity layer | Planned |
-| PostgreSQL and object storage | Planned |
+| Telemetry and manifest JSON schemas + CI fixtures | Implemented |
+| Ktor API health/experiment/telemetry routes | Implemented MVP |
+| PostgreSQL experiment metadata repository + Flyway migration | Implemented; CI verification in progress |
+| Local PostgreSQL Docker Compose setup | Implemented |
+| Authentication and organisation access controls | Planned |
+| S3-compatible recording storage | Planned |
 | ROS 2 edge gateway | Planned |
 | Python inference workers | Planned |
 | Web client | Planned |

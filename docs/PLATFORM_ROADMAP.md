@@ -26,21 +26,27 @@ This roadmap sequences platform work so that every phase produces a usable, test
 - [x] Keep the core independent of Compose UI, network clients, databases and ROS 2 libraries.
 - [x] Keep KMP JVM tests and Android application build green.
 
-**Exit criteria:** core tests run without UI, network, database or robot dependencies. **Passed in CI** for commit `d98a28d`.
+**Exit criteria:** core tests run without UI, network, database or robot dependencies. Passed in CI at commit `d98a28d`.
 
 ## Phase 2 — Local Platform API
 
 **Goal:** make the applications clients of a real backend.
 
-- [ ] Create a Ktor service with `/api/v1/health`.
-- [ ] Add experiment create/read/list endpoints.
-- [ ] Add WebSocket telemetry ingestion and fan-out.
-- [ ] Add request validation and structured errors.
-- [ ] Add PostgreSQL for metadata and migrations.
-- [ ] Add local object storage for recordings.
-- [ ] Add local Docker Compose deployment and integration tests.
+- [x] Create a Ktor service with `GET /api/v1/health`.
+- [x] Add experiment create/read/list endpoints.
+- [x] Add telemetry ingestion and WebSocket fan-out.
+- [x] Add typed request validation and structured errors.
+- [x] Add PostgreSQL experiment metadata repository and Flyway migration.
+- [x] Add local Docker Compose PostgreSQL service.
+- [x] Add API endpoint tests and PostgreSQL persistence integration test.
+- [ ] Add object storage and recording upload coordination.
+- [ ] Add authentication and device credentials.
+- [ ] Connect desktop client to the local API.
+- [ ] Verify Android API integration.
 
-**Exit criteria:** the desktop client can connect to the local API and read live simulator telemetry and experiment records.
+**Current verification:** the Ktor API MVP passed core/desktop/API CI at commit `511c9b3`. The PostgreSQL persistence and integration-test commit is `c202f4b`; its GitHub Actions run must be checked before this phase is considered verified.
+
+**Exit criteria:** desktop client can connect to the local API, receive simulator telemetry and read persisted experiment records.
 
 ## Phase 3 — Edge and real data
 
@@ -59,7 +65,7 @@ This roadmap sequences platform work so that every phase produces a usable, test
 **Goal:** make the robustness workflow scientifically meaningful.
 
 - [ ] Add a Python inference worker interface.
-- [ ] Run a conventional detector and an SNN on identical inputs.
+- [ ] Run a conventional detector and an SNN on identical input data.
 - [ ] Use labelled data for precision, recall, mAP or task-appropriate metrics.
 - [ ] Measure latency, memory and power when supported.
 - [ ] Export experiment reports with dataset/model/configuration/commit provenance.

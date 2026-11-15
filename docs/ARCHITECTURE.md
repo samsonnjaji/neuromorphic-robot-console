@@ -1,28 +1,41 @@
 # NRC Architecture
 
-This document describes the current Kotlin application implementation. The target multi-client platform architecture is documented in [PLATFORM_ARCHITECTURE.md](PLATFORM_ARCHITECTURE.md).
+This document describes the current Kotlin application and local platform API. The target multi-client architecture is documented in [PLATFORM_ARCHITECTURE.md](PLATFORM_ARCHITECTURE.md).
 
 ## Current application and core
 
 ```text
-                   +-----------------------------+
-                   |      Android / Desktop      |
-                   |     Compose Multiplatform   |
-                   +--------------+--------------+
-                                  |
-                   +--------------v--------------+
-                   |          composeApp          |
-                   | Compose UI + demo source    |
-                   +--------------+--------------+
-                                  |
-                   +--------------v--------------+
-                   |           nrc-core          |
-                   | Domain + experiment logic   |
-                   | Validation + replay        |
-                   +-----------------------------+
+             ANDROID / DESKTOP CLIENTS
+             Compose Multiplatform UI
+                       |
+             +---------v----------+
+             |     composeApp     |
+             | dashboard + demo   |
+             | telemetry source   |
+             +---------+----------+
+                       |
+             +---------v----------+
+             |      nrc-core      |
+             | domain + replay    |
+             | safety + metrics   |
+             +-------------------+
+
+       Local API (separate JVM process)
+             Ktor REST + WebSocket
+                       |
+             +---------v----------+
+             |   Platform API    |
+             | experiment routes |
+             | telemetry routes  |
+             +---------+---------+
+                       |
+             +---------v----------+
+             |    PostgreSQL     |
+             | experiment meta   |
+             +------------------+
 ```
 
-## Architectural principles
+## Current application principles
 
 1. **Simulation first:** screens and experiment workflows can be exercised without hardware.
 2. **Transport independence:** UI and domain models do not depend on ROS 2 libraries.
@@ -37,37 +50,26 @@ This document describes the current Kotlin application implementation. The targe
 
 `DemoTelemetryEngine` in `composeApp` generates a 10 Hz `RobotTelemetry` stream and exposes it through `StateFlow`. The shared Compose UI observes the stream. When mission capture is enabled, snapshots are passed to `MissionRecorder` in `nrc-core`, which stores bounded `RecordedTelemetryFrame` entries with offsets relative to the start of capture. Replay publishes those snapshots back into the simulator telemetry state flow while the simulator loop is paused.
 
-The `RobustnessLabEngine` in `nrc-core` applies a selected `EnvironmentScenario` to a snapshot using `RobustnessEvaluator`. The evaluator creates a deterministic stressed copy of the telemetry, then produces a `StressTestReport` with sensor retention, event-noise, detection-confidence and inference-latency comparisons. The dashboard renders the stressed sensor snapshot separately from the live simulator telemetry.
+The `RobustnessLabEngine` in `nrc-core` applies a selected `EnvironmentScenario` to a snapshot using `RobustnessEvaluator`. The evaluator creates a deterministic stressed copy of the telemetry, then produces a `StressTestReport` with sensor retention, event-noise, detection-confidence and inference-latency comparisons. The current stress coefficients are illustrative, not calibrated atmospheric or sensor-physics models, and their confidence values are not ground-truth accuracy metrics.
 
-The current stress coefficients are illustrative. They are not calibrated atmospheric or sensor-physics models, and their confidence values are not ground-truth accuracy metrics.
+## Local API data flow
 
-## Current telemetry contract
+The Ktor API is a separate JVM process. It exposes experiment metadata routes and a read-only telemetry ingest/stream path. When `NRC_DATABASE_URL` and database credentials are configured, the application creates a HikariCP connection pool, applies Flyway migrations and uses `JdbcExperimentRepository` for durable experiment metadata. When no database URL is configured, it explicitly falls back to an in-memory repository for local development and tests.
 
-The initial `RobotTelemetry` model contains:
-
-- Sequence and timestamp.
-- Connection and mission state.
-- Battery, linear/angular velocity and pose.
-- CPU load, inference latency and event rate.
-- Event-camera samples with polarity.
-- LiDAR polar points.
-- IMU acceleration and angular velocity.
-- Perception detections with confidence and bearing.
-- SNN layer activity, active-neuron count, firing rate and mean membrane potential.
-- Target speed and emergency-stop state.
-
-The versioned wire contract is defined in [schemas/telemetry-envelope.v1.schema.json](../schemas/telemetry-envelope.v1.schema.json).
+Telemetry ingestion is validated by `TelemetryStreamGuard` for schema version, message type, robot identity, sequence and timestamp. Accepted snapshots are published through a bounded in-memory `TelemetryHub` to connected WebSocket subscribers. This live stream is not a durable recording store.
 
 ## Current code layout
 
-- `core/nrc-core`: independent Kotlin Multiplatform module containing domain models, telemetry validation, safety-envelope logic, mission recording, robustness evaluation, transport interfaces and core tests. It has no Compose, database, networking or ROS 2 dependency.
+- `core/nrc-core`: independent Kotlin Multiplatform domain models, telemetry validation, safety-envelope logic, mission recording, robustness evaluation, transport interfaces and core tests.
 - `composeApp`: shared Compose presentation, dashboard, simulator source and current application wiring; also provides the JVM desktop entry point.
 - `androidApp`: Android-specific application shell that consumes `composeApp`.
+- `services/platform-api`: Ktor service, experiment repository abstraction, in-memory and PostgreSQL repositories, telemetry fan-out, Flyway migrations and API tests.
+- `deploy/local`: local PostgreSQL Compose configuration and PowerShell instructions.
 - `schemas`: versioned JSON contracts and positive/negative fixtures.
 - `scripts`: schema validation utility.
 
-## Planned platform boundaries
+## Not yet implemented
 
-The next stage is a Kotlin/Ktor platform API, followed by a read-only ROS 2 edge gateway, Python inference workers and a web client. These components are not present yet. See [PLATFORM_ARCHITECTURE.md](PLATFORM_ARCHITECTURE.md) and [PLATFORM_ROADMAP.md](PLATFORM_ROADMAP.md).
+Authentication, tenant boundaries, S3-compatible object storage, recording upload, desktop-to-API integration, ROS 2 gateway, Python inference runtime and web client remain planned. See [PLATFORM_ARCHITECTURE.md](PLATFORM_ARCHITECTURE.md), [PLATFORM_ROADMAP.md](PLATFORM_ROADMAP.md) and [SESSION_HANDOFF.md](SESSION_HANDOFF.md).
 
 The first edge gateway is read-only. Any future motion-command channel requires a separate safety architecture and independent validation.
