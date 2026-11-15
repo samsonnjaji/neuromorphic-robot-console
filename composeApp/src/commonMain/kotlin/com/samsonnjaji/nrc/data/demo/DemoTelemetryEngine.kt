@@ -1,6 +1,7 @@
 package com.samsonnjaji.nrc.data.demo
 
 import com.samsonnjaji.nrc.core.safety.SafetyEnvelope
+import com.samsonnjaji.nrc.data.telemetry.NrcTelemetrySource
 import com.samsonnjaji.nrc.domain.mission.MissionConsoleState
 import com.samsonnjaji.nrc.domain.mission.MissionRecorder
 import com.samsonnjaji.nrc.domain.model.Detection
@@ -25,9 +26,13 @@ import kotlin.math.sin
 class DemoTelemetryEngine(
     private val safety: SafetyEnvelope = SafetyEnvelope(),
     private val recorder: MissionRecorder = MissionRecorder()
-) {
+) : NrcTelemetrySource {
     private val _telemetry = MutableStateFlow(initialSnapshot())
-    val telemetry: StateFlow<RobotTelemetry> = _telemetry.asStateFlow()
+    override val telemetry: StateFlow<RobotTelemetry> = _telemetry.asStateFlow()
+
+    private val _isConnected = MutableStateFlow(true)
+    override val isConnected: StateFlow<Boolean> = _isConnected.asStateFlow()
+    override val sourceLabel: String = "SIMULATOR"
 
     private val _missionState = MutableStateFlow(MissionConsoleState())
     val missionState: StateFlow<MissionConsoleState> = _missionState.asStateFlow()
@@ -36,8 +41,9 @@ class DemoTelemetryEngine(
     private var replayJob: Job? = null
     private var tick = 0L
 
-    fun start(scope: CoroutineScope) {
+    override fun start(scope: CoroutineScope) {
         if (simulationJob?.isActive == true) return
+        _isConnected.value = true
         simulationJob = scope.launch {
             while (isActive) {
                 delay(100)
@@ -61,11 +67,12 @@ class DemoTelemetryEngine(
         }
     }
 
-    fun stop() {
+    override fun stop() {
         if (recorder.isRecording) stopRecording()
         stopReplay()
         simulationJob?.cancel()
         simulationJob = null
+        _isConnected.value = false
     }
 
     fun setTargetSpeed(requestedMps: Float) {

@@ -10,7 +10,7 @@ This roadmap sequences platform work so that every phase produces a usable, test
 - [x] Record architecture decisions for platform boundaries and data contracts.
 - [x] Define initial telemetry and experiment JSON schemas.
 - [x] Add positive and negative schema fixtures and CI validation.
-- [ ] Add a versioned OpenAPI document for the first REST endpoints.
+- [x] Add an OpenAPI 3.1 document for implemented REST endpoints and a WebSocket extension.
 - [x] Agree the core module extraction plan.
 
 **Exit criteria:** the team can explain which component owns each responsibility and how every component exchanges data.
@@ -39,14 +39,16 @@ This roadmap sequences platform work so that every phase produces a usable, test
 - [x] Add PostgreSQL experiment metadata repository and Flyway migration.
 - [x] Add local Docker Compose PostgreSQL service.
 - [x] Add API endpoint tests and PostgreSQL persistence integration test.
+- [x] Add OpenAPI 3.1 route reference and external schema checks.
+- [x] Add a desktop API-relay source that sends synthetic telemetry through REST and receives it over WebSocket.
 - [ ] Add object storage and recording upload coordination.
 - [ ] Add authentication and device credentials.
-- [ ] Connect desktop client to the local API.
-- [ ] Verify Android API integration.
+- [ ] Verify the desktop API-relay mode in Cursor on the user's Windows PC.
+- [ ] Verify Android API integration after desktop behavior is validated.
 
-**Current verification:** the Ktor API MVP passed core/desktop/API CI at commit `511c9b3`. The PostgreSQL persistence and integration-test commit is `c202f4b`; its GitHub Actions run must be checked before this phase is considered verified.
+**Current verification:** PostgreSQL persistence, API tests, core tests, desktop compilation and Android debug build passed CI at commit `c202f4b`. The OpenAPI and desktop API-relay additions are in the next CI run and must be verified before local testing.
 
-**Exit criteria:** desktop client can connect to the local API, receive simulator telemetry and read persisted experiment records.
+**Exit criteria:** desktop client can connect to the local API, receive simulator telemetry through the API and read persisted experiment records.
 
 ## Phase 3 — Edge and real data
 

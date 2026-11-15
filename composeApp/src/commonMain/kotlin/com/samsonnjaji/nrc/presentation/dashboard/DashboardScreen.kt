@@ -48,6 +48,9 @@ private val White = Color(0xFFE8F0F7)
 @Composable
 fun DashboardScreen(
     telemetry: RobotTelemetry,
+    sourceLabel: String,
+    sourceConnected: Boolean,
+    readOnly: Boolean,
     onSpeedChange: (Float) -> Unit,
     onEmergencyStop: () -> Unit,
     onResetEmergencyStop: () -> Unit,
@@ -77,16 +80,24 @@ fun DashboardScreen(
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text("NRC  /  NEUROMORPHIC ROBOTICS CONSOLE", color = Mint, fontSize = 11.sp)
                 Text("Robot Intelligence Monitor", color = White, fontSize = 25.sp)
-                Text("Research workspace  •  Deterministic demo telemetry", color = Muted, fontSize = 12.sp)
+                Text(
+                    if (readOnly) "Research workspace  •  Read-only API relay test"
+                    else "Research workspace  •  Deterministic demo telemetry",
+                    color = Muted,
+                    fontSize = 12.sp
+                )
             }
-            StatusPill(if (telemetry.connected) "SIMULATOR ONLINE" else "OFFLINE", Mint)
+            StatusPill(
+                if (sourceConnected) "$sourceLabel ONLINE" else "$sourceLabel DISCONNECTED",
+                if (sourceConnected) Mint else Red
+            )
         }
 
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
             MetricCard("BATTERY", telemetry.batteryPercent.toString() + "%", "Power system", Mint, Modifier.weight(1f))
             MetricCard("VELOCITY", format(telemetry.linearVelocityMps) + " m/s", "Linear speed", Blue, Modifier.weight(1f))
-            MetricCard("INFERENCE", format(telemetry.inferenceLatencyMs) + " ms", "Live simulator", Amber, Modifier.weight(1f))
-            MetricCard("EVENT RATE", (telemetry.eventRateHz / 1000).toString() + "k Hz", "Live event stream", Mint, Modifier.weight(1f))
+            MetricCard("INFERENCE", format(telemetry.inferenceLatencyMs) + " ms", "Telemetry snapshot", Amber, Modifier.weight(1f))
+            MetricCard("EVENT RATE", (telemetry.eventRateHz / 1000).toString() + "k Hz", "Event stream", Mint, Modifier.weight(1f))
         }
 
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
@@ -107,7 +118,7 @@ fun DashboardScreen(
         }
 
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-            PanelCard("PERCEPTION + SNN ACTIVITY", Modifier.weight(1f)) {
+            PanelCard("PERCEPTION + SNN ACTIVITY", Modifier.weight(if (readOnly) 2f else 1f)) {
                 sensorTelemetry.detections.forEach { detection ->
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
@@ -156,34 +167,36 @@ fun DashboardScreen(
                 )
             }
 
-            PanelCard("ROBOT CONTROL  /  SIMULATION ONLY", Modifier.weight(1f)) {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text("Target speed", color = Muted, fontSize = 12.sp)
-                    Text(format(telemetry.targetSpeedMps) + " m/s", color = Mint, fontSize = 13.sp)
-                }
-                Slider(
-                    value = telemetry.targetSpeedMps,
-                    onValueChange = onSpeedChange,
-                    valueRange = 0f..0.5f,
-                    enabled = !telemetry.emergencyStop
-                )
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Button(
-                        onClick = onToggleMission,
-                        colors = ButtonDefaults.buttonColors(containerColor = Blue, contentColor = Color(0xFF07121D))
-                    ) {
-                        Text(if (telemetry.missionRunning) "Pause mission" else "Resume mission")
+            if (!readOnly) {
+                PanelCard("ROBOT CONTROL  /  SIMULATION ONLY", Modifier.weight(1f)) {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text("Target speed", color = Muted, fontSize = 12.sp)
+                        Text(format(telemetry.targetSpeedMps) + " m/s", color = Mint, fontSize = 13.sp)
                     }
-                    if (telemetry.emergencyStop) {
-                        OutlinedButton(onClick = onResetEmergencyStop) { Text("Reset E-stop", color = Amber) }
-                    } else {
+                    Slider(
+                        value = telemetry.targetSpeedMps,
+                        onValueChange = onSpeedChange,
+                        valueRange = 0f..0.5f,
+                        enabled = !telemetry.emergencyStop
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                         Button(
-                            onClick = onEmergencyStop,
-                            colors = ButtonDefaults.buttonColors(containerColor = Red)
-                        ) { Text("EMERGENCY STOP") }
+                            onClick = onToggleMission,
+                            colors = ButtonDefaults.buttonColors(containerColor = Blue, contentColor = Color(0xFF07121D))
+                        ) {
+                            Text(if (telemetry.missionRunning) "Pause mission" else "Resume mission")
+                        }
+                        if (telemetry.emergencyStop) {
+                            OutlinedButton(onClick = onResetEmergencyStop) { Text("Reset E-stop", color = Amber) }
+                        } else {
+                            Button(
+                                onClick = onEmergencyStop,
+                                colors = ButtonDefaults.buttonColors(containerColor = Red)
+                            ) { Text("EMERGENCY STOP") }
+                        }
                     }
+                    Text("All commands are simulated. No physical robot is connected.", color = Muted, fontSize = 10.sp)
                 }
-                Text("All commands are simulated. No physical robot is connected.", color = Muted, fontSize = 10.sp)
             }
         }
 
@@ -194,48 +207,50 @@ fun DashboardScreen(
             onClearReport = onClearStressReport
         )
 
-        PanelCard("MISSION CAPTURE  /  DETERMINISTIC REPLAY", Modifier.fillMaxWidth()) {
-            Text(
-                when {
-                    missionState.isReplaying -> "REPLAYING RECORDED TELEMETRY"
-                    missionState.isRecording -> "RECORDING MISSION"
-                    missionState.availableFrames > 0 -> "LAST MISSION READY"
-                    else -> "NO MISSION RECORDED"
-                },
-                color = if (missionState.isRecording || missionState.isReplaying) Mint else Muted,
-                fontSize = 12.sp
-            )
-            Text(
-                "Captured " + missionState.recordedFrames + " frames  •  Available " +
-                    missionState.availableFrames + " frames  •  " +
-                    (missionState.durationMs / 1000).toString() + " s",
-                color = Muted,
-                fontSize = 11.sp
-            )
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (missionState.isRecording) {
-                    Button(
-                        onClick = onStopRecording,
-                        colors = ButtonDefaults.buttonColors(containerColor = Amber)
-                    ) { Text("Stop recording", color = Color(0xFF17120A)) }
-                } else {
-                    Button(onClick = onStartRecording, enabled = !missionState.isReplaying) {
-                        Text("Record mission")
+        if (!readOnly) {
+            PanelCard("MISSION CAPTURE  /  DETERMINISTIC REPLAY", Modifier.fillMaxWidth()) {
+                Text(
+                    when {
+                        missionState.isReplaying -> "REPLAYING RECORDED TELEMETRY"
+                        missionState.isRecording -> "RECORDING MISSION"
+                        missionState.availableFrames > 0 -> "LAST MISSION READY"
+                        else -> "NO MISSION RECORDED"
+                    },
+                    color = if (missionState.isRecording || missionState.isReplaying) Mint else Muted,
+                    fontSize = 12.sp
+                )
+                Text(
+                    "Captured " + missionState.recordedFrames + " frames  •  Available " +
+                        missionState.availableFrames + " frames  •  " +
+                        (missionState.durationMs / 1000).toString() + " s",
+                    color = Muted,
+                    fontSize = 11.sp
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (missionState.isRecording) {
+                        Button(
+                            onClick = onStopRecording,
+                            colors = ButtonDefaults.buttonColors(containerColor = Amber)
+                        ) { Text("Stop recording", color = Color(0xFF17120A)) }
+                    } else {
+                        Button(onClick = onStartRecording, enabled = !missionState.isReplaying) {
+                            Text("Record mission")
+                        }
+                    }
+                    if (missionState.isReplaying) {
+                        OutlinedButton(onClick = onStopReplay) { Text("Stop replay") }
+                    } else {
+                        OutlinedButton(onClick = onReplayMission, enabled = missionState.availableFrames > 0) {
+                            Text("Replay last")
+                        }
                     }
                 }
-                if (missionState.isReplaying) {
-                    OutlinedButton(onClick = onStopReplay) { Text("Stop replay") }
-                } else {
-                    OutlinedButton(onClick = onReplayMission, enabled = missionState.availableFrames > 0) {
-                        Text("Replay last")
-                    }
-                }
+                Text(
+                    "Mission snapshots are stored in memory in this MVP. Hardware control is not enabled.",
+                    color = Muted,
+                    fontSize = 10.sp
+                )
             }
-            Text(
-                "Mission snapshots are stored in memory in this MVP. Hardware control is not enabled.",
-                color = Muted,
-                fontSize = 10.sp
-            )
         }
 
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {

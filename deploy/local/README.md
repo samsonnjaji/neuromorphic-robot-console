@@ -2,7 +2,7 @@
 
 This Compose file starts PostgreSQL for the NRC Platform API. It binds the database to loopback only; it is intended for local development, not public deployment.
 
-## Start PostgreSQL
+## 1. Start PostgreSQL
 
 From the repository root:
 
@@ -13,7 +13,7 @@ docker compose -f deploy/local/compose.yaml ps
 
 The local-only default password is `nrc_local_dev_only`. Override it by setting `NRC_DB_PASSWORD` before starting Compose. Do not reuse this development password outside a local workstation.
 
-## Run the API from PowerShell
+## 2. Run the API from PowerShell
 
 Open a second terminal at the repository root:
 
@@ -28,7 +28,7 @@ gradle :platform-api:run
 
 Flyway applies the versioned SQL migrations at startup. When `NRC_DATABASE_URL` is absent, the API falls back to an in-memory repository and prints a warning; those records are not durable.
 
-## Verify the API
+## 3. Verify the API
 
 In another PowerShell terminal:
 
@@ -39,7 +39,33 @@ Invoke-RestMethod http://127.0.0.1:8080/api/v1/experiments
 
 Expected health response includes `status = ok`, `service = nrc-platform-api`, and `apiVersion = v1`.
 
-## Stop PostgreSQL
+## 4. Run the desktop API-relay test
+
+Keep the API running. Open a third terminal at the repository root:
+
+```powershell
+$env:NRC_API_BASE_URL = "http://127.0.0.1:8080"
+$env:NRC_ROBOT_ID = "nrc-desktop-relay"
+gradle :composeApp:run
+```
+
+The desktop client will:
+1. Generate clearly labelled synthetic simulator telemetry.
+2. POST each snapshot to the local API.
+3. Subscribe to the robot's WebSocket stream.
+4. Render the snapshots received back from the API.
+
+The dashboard should show `API RELAY · SYNTHETIC ONLINE` and live event-camera, LiDAR, IMU and SNN panels. This verifies the desktop-to-API-to-desktop data path; it is not a real robot connection and does not enable actuation.
+
+To run the original standalone simulator UI instead, remove the API environment variables before launching:
+
+```powershell
+Remove-Item Env:NRC_API_BASE_URL -ErrorAction SilentlyContinue
+Remove-Item Env:NRC_ROBOT_ID -ErrorAction SilentlyContinue
+gradle :composeApp:run
+```
+
+## 5. Stop PostgreSQL
 
 ```powershell
 docker compose -f deploy/local/compose.yaml down
@@ -53,4 +79,5 @@ Use `docker compose -f deploy/local/compose.yaml down -v` only when you intentio
 - PostgreSQL currently stores experiment metadata only.
 - Live telemetry fan-out is in memory and is not durable.
 - Raw MCAP/ROS bag/image/video recordings are not stored in PostgreSQL.
+- The desktop API-relay mode uses synthetic telemetry to test the API path.
 - Do not expose the API or database to a network until authentication, TLS, access controls and deployment hardening are implemented.

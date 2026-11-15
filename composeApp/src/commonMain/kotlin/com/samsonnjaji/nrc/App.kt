@@ -5,6 +5,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -14,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import com.samsonnjaji.nrc.data.demo.DemoTelemetryEngine
 import com.samsonnjaji.nrc.data.robustness.RobustnessLabEngine
+import com.samsonnjaji.nrc.data.telemetry.NrcTelemetrySource
 import com.samsonnjaji.nrc.presentation.dashboard.DashboardScreen
 
 private val NrcColors = darkColorScheme(
@@ -28,16 +30,22 @@ private val NrcColors = darkColorScheme(
 )
 
 @Composable
-fun App() {
+fun App(apiTelemetrySource: NrcTelemetrySource? = null) {
     MaterialTheme(colorScheme = NrcColors) {
-        val engine = remember { DemoTelemetryEngine() }
+        val demoEngine = remember { DemoTelemetryEngine() }
+        val telemetrySource = apiTelemetrySource ?: demoEngine
+        val readOnly = apiTelemetrySource != null
         val robustnessEngine = remember { RobustnessLabEngine() }
         val scope = rememberCoroutineScope()
-        val telemetry by engine.telemetry.collectAsState()
-        val missionState by engine.missionState.collectAsState()
+        val telemetry by telemetrySource.telemetry.collectAsState()
+        val sourceConnected by telemetrySource.isConnected.collectAsState()
+        val missionState by demoEngine.missionState.collectAsState()
         val robustnessState by robustnessEngine.state.collectAsState()
 
-        LaunchedEffect(engine) { engine.start(scope) }
+        LaunchedEffect(telemetrySource) { telemetrySource.start(scope) }
+        DisposableEffect(telemetrySource) {
+            onDispose { telemetrySource.stop() }
+        }
 
         Surface(
             modifier = Modifier.fillMaxSize(),
@@ -45,15 +53,18 @@ fun App() {
         ) {
             DashboardScreen(
                 telemetry = telemetry,
-                onSpeedChange = engine::setTargetSpeed,
-                onEmergencyStop = engine::triggerEmergencyStop,
-                onResetEmergencyStop = engine::resetEmergencyStop,
-                onToggleMission = engine::toggleMission,
+                sourceLabel = telemetrySource.sourceLabel,
+                sourceConnected = sourceConnected,
+                readOnly = readOnly,
+                onSpeedChange = demoEngine::setTargetSpeed,
+                onEmergencyStop = demoEngine::triggerEmergencyStop,
+                onResetEmergencyStop = demoEngine::resetEmergencyStop,
+                onToggleMission = demoEngine::toggleMission,
                 missionState = missionState,
-                onStartRecording = engine::startRecording,
-                onStopRecording = engine::stopRecording,
-                onReplayMission = { engine.replayMission(scope) },
-                onStopReplay = engine::stopReplay,
+                onStartRecording = demoEngine::startRecording,
+                onStopRecording = demoEngine::stopRecording,
+                onReplayMission = { demoEngine.replayMission(scope) },
+                onStopReplay = demoEngine::stopReplay,
                 robustnessState = robustnessState,
                 onScenarioSelected = robustnessEngine::selectScenario,
                 onRunStressTest = { robustnessEngine.run(telemetry) },

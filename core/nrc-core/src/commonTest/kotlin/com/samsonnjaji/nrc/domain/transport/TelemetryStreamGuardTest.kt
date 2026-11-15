@@ -44,6 +44,19 @@ class TelemetryStreamGuardTest {
     }
 
     @Test
+    fun rejectsPayloadSequenceMismatch() {
+        val guard = TelemetryStreamGuard("robot-01")
+        val inconsistent = envelope(sequence = 9).copy(
+            payload = RobotTelemetry(sequence = 8, timestampMs = 900)
+        )
+        assertEquals(
+            EnvelopeValidation.PAYLOAD_SEQUENCE_MISMATCH,
+            guard.validate(inconsistent)
+        )
+        assertEquals(-1L, guard.lastSequence())
+    }
+
+    @Test
     fun rejectsUnknownSchemaAndMessageType() {
         val guard = TelemetryStreamGuard("robot-01")
         assertEquals(

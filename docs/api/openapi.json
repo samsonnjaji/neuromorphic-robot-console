@@ -1,0 +1,361 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "NRC Platform API",
+    "version": "1.0.0",
+    "description": "Versioned API for experiment metadata and read-only telemetry ingestion/streaming. The current MVP is local-only and unauthenticated; do not expose it publicly."
+  },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:8080",
+      "description": "Local development server"
+    }
+  ],
+  "paths": {
+    "/api/v1/health": {
+      "get": {
+        "operationId": "getHealth",
+        "summary": "Get API health",
+        "responses": {
+          "200": {
+            "description": "API process is healthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/experiments": {
+      "get": {
+        "operationId": "listExperiments",
+        "summary": "List experiment metadata",
+        "responses": {
+          "200": {
+            "description": "Most recent experiment records",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ExperimentRecord"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createExperiment",
+        "summary": "Create experiment metadata",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateExperimentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Experiment created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExperimentRecord"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid experiment request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/experiments/{experimentId}": {
+      "get": {
+        "operationId": "getExperiment",
+        "summary": "Get one experiment",
+        "parameters": [
+          {
+            "name": "experimentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Experiment found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExperimentRecord"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Experiment not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/robots/{robotId}/telemetry": {
+      "post": {
+        "operationId": "ingestTelemetry",
+        "summary": "Ingest a telemetry snapshot",
+        "parameters": [
+          {
+            "name": "robotId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../../schemas/telemetry-envelope.v1.schema.json"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Telemetry accepted for live fan-out",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TelemetryAcceptedResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Telemetry rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "x-websocket-endpoints": {
+    "/api/v1/robots/{robotId}/stream": {
+      "description": "WebSocket endpoint. Connect using ws:// or wss:// with the robotId path parameter. The server sends JSON TelemetryEnvelope messages when snapshots are accepted. The current hub retains only the latest snapshot and a bounded in-memory buffer.",
+      "pathParameters": {
+        "robotId": {
+          "type": "string",
+          "required": true
+        }
+      },
+      "messageSchema": {
+        "$ref": "../../schemas/telemetry-envelope.v1.schema.json"
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "HealthResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "status",
+          "service",
+          "apiVersion"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "const": "ok"
+          },
+          "service": {
+            "type": "string",
+            "const": "nrc-platform-api"
+          },
+          "apiVersion": {
+            "type": "string",
+            "const": "v1"
+          }
+        }
+      },
+      "ApiError": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "message"
+        ],
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateExperimentRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "scenario",
+          "sourceType",
+          "sourceId",
+          "modelIdentifier",
+          "modelVersion"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "description": {
+            "type": "string"
+          },
+          "scenario": {
+            "type": "string",
+            "enum": [
+              "CLEAR",
+              "HEAVY_RAIN",
+              "FOG",
+              "LOW_LIGHT",
+              "DUST_SMOKE"
+            ]
+          },
+          "sourceType": {
+            "type": "string",
+            "enum": [
+              "SIMULATOR",
+              "ROS2_LIVE",
+              "MCAP_RECORDING",
+              "ROS_BAG_RECORDING",
+              "CARLA_SIMULATION",
+              "ISAAC_SIMULATION"
+            ]
+          },
+          "sourceId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "modelIdentifier": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "modelVersion": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        }
+      },
+      "ExperimentRecord": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
+          "description",
+          "scenario",
+          "sourceType",
+          "sourceId",
+          "modelIdentifier",
+          "modelVersion",
+          "createdAtUnixMs"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "scenario": {
+            "type": "string"
+          },
+          "sourceType": {
+            "type": "string"
+          },
+          "sourceId": {
+            "type": "string"
+          },
+          "modelIdentifier": {
+            "type": "string"
+          },
+          "modelVersion": {
+            "type": "string"
+          },
+          "createdAtUnixMs": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "TelemetryAcceptedResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "status",
+          "robotId",
+          "sequence"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "const": "accepted"
+          },
+          "robotId": {
+            "type": "string"
+          },
+          "sequence": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    }
+  }
+}

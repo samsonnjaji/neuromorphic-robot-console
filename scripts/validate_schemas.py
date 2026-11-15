@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate NRC JSON Schemas and positive/negative contract fixtures."""
+"""Validate NRC JSON Schemas, contract fixtures and the OpenAPI document."""
 
 import json
 from pathlib import Path
@@ -19,11 +19,55 @@ CASES = (
         ROOT / "schemas/fixtures/experiment-manifest.v1.invalid.json",
     ),
 )
+OPENAPI_PATH = ROOT / "docs/api/openapi.json"
 
 
 def load_json(path: Path):
     with path.open("r", encoding="utf-8") as handle:
         return json.load(handle)
+
+
+def find_refs(value):
+    if isinstance(value, dict):
+        for key, child in value.items():
+            if key == "$ref" and isinstance(child, str):
+                yield child
+            else:
+                yield from find_refs(child)
+    elif isinstance(value, list):
+        for child in value:
+            yield from find_refs(child)
+
+
+def validate_openapi() -> None:
+    spec = load_json(OPENAPI_PATH)
+    if spec.get("openapi") != "3.1.0":
+        raise AssertionError("NRC OpenAPI document must use OpenAPI 3.1.0")
+
+    required_paths = {
+        "/api/v1/health",
+        "/api/v1/experiments",
+        "/api/v1/experiments/{experimentId}",
+        "/api/v1/robots/{robotId}/telemetry",
+    }
+    missing = required_paths.difference(spec.get("paths", {}))
+    if missing:
+        raise AssertionError(f"OpenAPI document is missing paths: {sorted(missing)}")
+
+    for reference in find_refs(spec):
+        if reference.startswith("#"):
+            continue
+        target = (OPENAPI_PATH.parent / reference.split("#", 1)[0]).resolve()
+        if not target.is_file():
+            raise AssertionError(f"OpenAPI reference does not exist: {reference}")
+        if target.suffix == ".json":
+            load_json(target)
+
+    websocket = spec.get("x-websocket-endpoints", {})
+    if "/api/v1/robots/{robotId}/stream" not in websocket:
+        raise AssertionError("OpenAPI document is missing the telemetry WebSocket extension")
+
+    print("PASS docs/api/openapi.json: required REST paths and external schema references exist")
 
 
 def main() -> None:
@@ -45,6 +89,8 @@ def main() -> None:
             f"PASS {schema_path.name}: schema valid, "
             f"{valid_path.name} accepted, {invalid_path.name} rejected"
         )
+
+    validate_openapi()
 
 
 if __name__ == "__main__":

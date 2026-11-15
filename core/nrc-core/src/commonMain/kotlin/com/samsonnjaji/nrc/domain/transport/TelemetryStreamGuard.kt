@@ -20,6 +20,9 @@ class TelemetryStreamGuard(
         if (envelope.robotId != expectedRobotId || expectedRobotId.isBlank()) {
             return EnvelopeValidation.WRONG_ROBOT
         }
+        if (envelope.payload.sequence != envelope.sequence) {
+            return EnvelopeValidation.PAYLOAD_SEQUENCE_MISMATCH
+        }
         if (envelope.sequence < 0L || envelope.sequence <= lastAcceptedSequence) {
             return EnvelopeValidation.STALE_OR_DUPLICATE_SEQUENCE
         }
@@ -43,6 +46,7 @@ enum class EnvelopeValidation {
     UNSUPPORTED_SCHEMA,
     UNSUPPORTED_MESSAGE,
     WRONG_ROBOT,
+    PAYLOAD_SEQUENCE_MISMATCH,
     STALE_OR_DUPLICATE_SEQUENCE,
     INVALID_TIMESTAMP
 }

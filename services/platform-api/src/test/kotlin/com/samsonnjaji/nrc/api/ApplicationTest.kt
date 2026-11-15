@@ -86,6 +86,54 @@ class ApplicationTest {
     }
 
     @Test
+    fun telemetryIngestionRejectsMismatchedPayloadSequence() = testApplication {
+        application { module() }
+        val payload = """
+            {
+              "schemaVersion": 1,
+              "messageType": "telemetry.snapshot",
+              "robotId": "nrc-test-robot",
+              "sequence": 7,
+              "timestampUnixMs": 1794729600000,
+              "payload": {
+                "sequence": 6,
+                "timestampMs": 700,
+                "connected": true,
+                "batteryPercent": 95,
+                "linearVelocityMps": 0.1,
+                "angularVelocityRadS": 0.0,
+                "xMeters": 1.0,
+                "yMeters": 2.0,
+                "headingRadians": 0.0,
+                "cpuLoadPercent": 20,
+                "inferenceLatencyMs": 8.0,
+                "eventRateHz": 12000,
+                "targetSpeedMps": 0.1,
+                "emergencyStop": false,
+                "missionRunning": true,
+                "detections": [],
+                "snnLayers": [],
+                "lidar": [],
+                "events": [],
+                "imu": {
+                  "accelerationX": 0.0,
+                  "accelerationY": 0.0,
+                  "accelerationZ": 9.81,
+                  "angularVelocityZ": 0.0
+                }
+              }
+            }
+        """.trimIndent()
+
+        val response = client.post("/api/v1/robots/nrc-test-robot/telemetry") {
+            contentType(ContentType.Application.Json)
+            setBody(payload)
+        }
+        assertEquals(HttpStatusCode.BadRequest, response.status)
+        assertContains(response.bodyAsText(), "payload_sequence_mismatch")
+    }
+
+    @Test
     fun telemetryIngestionRejectsDuplicateSequence() = testApplication {
         application { module() }
         val payload = """
