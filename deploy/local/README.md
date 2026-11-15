@@ -24,7 +24,9 @@ Do not reuse a development password outside a local workstation.
 Open a second terminal at the repository root:
 
 ```powershell
-$env:NRC_DATABASE_URL = "jdbc:postgresql://localhost:5435/nrc" # Use 5432 if the host port was not overridden
+$env:NRC_DATABASE_URL = "jdbc:postgresql://localhost:5432/nrc"
+# If NRC_POSTGRES_HOST_PORT=5435 is set in .env, use this instead:
+# $env:NRC_DATABASE_URL = "jdbc:postgresql://localhost:5435/nrc"
 $env:NRC_DATABASE_USER = "nrc"
 $env:NRC_DATABASE_PASSWORD = "nrc_local_dev_only"
 $env:NRC_API_HOST = "127.0.0.1"
