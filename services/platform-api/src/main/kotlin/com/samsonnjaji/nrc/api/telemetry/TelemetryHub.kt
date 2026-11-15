@@ -13,7 +13,7 @@ import java.util.concurrent.ConcurrentHashMap
 class TelemetryHub {
     private val streams = ConcurrentHashMap<String, MutableSharedFlow<TelemetryEnvelope>>()
 
-    fun stream(robotId: String): SharedFlow<TelemetryEnvelope> =
+    private fun mutableStream(robotId: String): MutableSharedFlow<TelemetryEnvelope> =
         streams.computeIfAbsent(robotId) {
             MutableSharedFlow(
                 replay = 1,
@@ -22,7 +22,9 @@ class TelemetryHub {
             )
         }
 
+    fun stream(robotId: String): SharedFlow<TelemetryEnvelope> = mutableStream(robotId)
+
     suspend fun publish(envelope: TelemetryEnvelope) {
-        stream(envelope.robotId).emit(envelope)
+        mutableStream(envelope.robotId).emit(envelope)
     }
 }

@@ -15,6 +15,7 @@ import com.samsonnjaji.nrc.domain.transport.TelemetryStreamGuard
 import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
+import io.ktor.server.application.install
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
@@ -118,6 +119,17 @@ fun Application.module(
                 }
 
                 val envelope = call.receive<TelemetryEnvelope>()
+                if (envelope.robotId != robotId) {
+                    call.respond(
+                        HttpStatusCode.BadRequest,
+                        ApiError(
+                            "robot_id_mismatch",
+                            "The route robot ID must match the telemetry envelope robot ID."
+                        )
+                    )
+                    return@post
+                }
+
                 val guard = streamGuards.computeIfAbsent(robotId) {
                     TelemetryStreamGuard(robotId)
                 }
