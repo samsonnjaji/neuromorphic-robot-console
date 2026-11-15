@@ -39,12 +39,13 @@ Robotics teams often have separate tools for sensor visualization, simulation, m
 - Versioned telemetry envelope and sequence/schema validation.
 - Environment Robustness Lab with clear, rain, fog, low-light and dust/smoke profiles.
 - Deterministic synthetic perturbations for LiDAR returns, event samples, detection confidence and inference latency.
+- Versioned in-memory ExperimentManifest with experiment ID, source type/ID, source sequence/timestamp, model identity and scenario coefficients.
 
-**Prototype limitation:** the current environment profiles are illustrative coefficients. They are not calibrated weather physics, measured model accuracy or safety certification.
+**Prototype limitation:** the current environment profiles are illustrative coefficients. They are not calibrated weather physics, measured model accuracy or safety certification. Current manifests describe simulated runs; persistent export and real dataset provenance are not implemented yet.
 
-## Differentiated product capabilities
+## Target differentiated capabilities (roadmap)
 
-1. Adverse-environment experiment design and repeatable scenario execution.
+1. Validated adverse-environment experiment design and repeatable scenario execution.
 2. Synchronized sensor-to-perception-to-action traceability.
 3. Conventional versus spiking neural network comparisons on identical inputs.
 4. Ground-truth-aware evaluation with reproducible dataset/model/configuration provenance.
@@ -57,13 +58,14 @@ Robotics teams often have separate tools for sensor visualization, simulation, m
 - MCAP and ROS bag for recorded sensor data.
 - CARLA and NVIDIA Isaac Sim for simulation sources.
 - Public event-vision and adverse-weather datasets for repeatable benchmark suites.
+- NeuroBench-compatible benchmark interfaces where applicable.
 - Hardware-specific telemetry for edge and neuromorphic energy measurements.
 
 ## Next milestones
 
 1. Complete the environment robustness prototype and its automated tests.
 2. Verify Android and desktop builds.
-3. Add a versioned experiment manifest and report export.
+3. Serialize experiment manifests and add reproducible report export.
 4. Implement a read-only WebSocket telemetry adapter.
 5. Build a separate ROS 2 gateway.
 6. Ingest real adverse-weather/event-vision recordings.

@@ -18,8 +18,9 @@ Robotics teams already have capable tools for visualization, simulation and flee
 - Bounded mission recording and timestamped replay.
 - Versioned telemetry envelope and stream validation.
 - Environment Robustness Lab with deterministic synthetic stress profiles.
+- Versioned experiment manifest attached to each stress-test report, including source frame, model identifier and scenario coefficients.
 
-**Important:** the current robustness profiles are illustrative synthetic perturbations. They are not calibrated weather physics, measured model accuracy or safety certification.
+**Important:** the current robustness profiles are illustrative synthetic perturbations. They are not calibrated weather physics, measured model accuracy or safety certification. Experiment manifests currently describe simulator runs; persistent export and real dataset provenance are future work.
 
 ## Product direction
 
@@ -28,7 +29,7 @@ Robotics teams already have capable tools for visualization, simulation and flee
 3. Compare conventional and spiking models on identical inputs.
 4. Capture ground-truth-aware perception metrics.
 5. Measure edge latency, memory, power and energy per inference.
-6. Produce reproducible reports with dataset/model/configuration provenance.
+6. Serialize reproducible reports with dataset/model/configuration provenance.
 
 ## Quick start
 
