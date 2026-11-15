@@ -72,6 +72,7 @@ class InMemoryArtifactRepository : ArtifactRepository {
     ): List<ArtifactRecord> = records.values
         .filter {
             (it.status == "PENDING_UPLOAD" && it.uploadUrlExpiresAtUnixMs <= expiredBeforeUnixMs) ||
+                (it.status == "FAILED" && it.uploadUrlExpiresAtUnixMs <= expiredBeforeUnixMs && it.cleanupCompletedAtUnixMs == null) ||
                 (it.status == "ABORTED" && it.cleanupCompletedAtUnixMs == null)
         }
         .sortedWith(compareBy<ArtifactRecord> { it.uploadUrlExpiresAtUnixMs }.thenBy { it.createdAtUnixMs })
@@ -96,7 +97,7 @@ class InMemoryArtifactRepository : ArtifactRepository {
     override suspend fun markCleanupCompleted(id: String, completedAtUnixMs: Long): Boolean =
         synchronized(records) {
             val current = records[id] ?: return@synchronized false
-            if (current.status != "ABORTED" || current.cleanupCompletedAtUnixMs != null) {
+            if (current.status !in setOf("ABORTED", "FAILED") || current.cleanupCompletedAtUnixMs != null) {
                 return@synchronized false
             }
             records[id] = current.copy(cleanupCompletedAtUnixMs = completedAtUnixMs)

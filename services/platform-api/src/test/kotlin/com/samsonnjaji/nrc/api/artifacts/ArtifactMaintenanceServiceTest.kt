@@ -62,6 +62,19 @@ class ArtifactMaintenanceServiceTest {
     }
 
     @Test
+    fun failedArtifactsWithExpiredUploadUrlsAreCleaned() = runBlocking {
+        val now = 10_000_000L
+        val repository = InMemoryArtifactRepository()
+        val storage = RecordingStorage()
+        val artifact = artifact("failed", "SINGLE_PUT", now - 90_000, null).copy(status = "FAILED")
+        repository.create(artifact)
+        val summary = service(repository, storage).runOnce(now)
+        assertEquals(1, summary.cleaned)
+        assertEquals(now, repository.find(artifact.id)?.cleanupCompletedAtUnixMs)
+        assertEquals(listOf(artifact.objectKey), storage.deletedKeys)
+    }
+
+    @Test
     fun activeUploadsAreNotSelectedForCleanup() = runBlocking {
         val now = 10_000_000L
         val repository = InMemoryArtifactRepository()

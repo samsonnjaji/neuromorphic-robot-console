@@ -96,6 +96,24 @@ class JdbcArtifactRepositoryTest {
             assertTrue(repository.markCleanupCompleted(expiredId, now))
             assertEquals(now, repository.find(expiredId)?.cleanupCompletedAtUnixMs)
             assertTrue(repository.listCleanupCandidates(now + 10_000, 10).none { it.id == expiredId })
+
+            val failedId = UUID.randomUUID().toString()
+            repository.create(
+                artifact.copy(
+                    id = failedId,
+                    status = "FAILED",
+                    objectKey = "ci/$failedId/failed.mcap",
+                    createdAtUnixMs = now - 90_000,
+                    uploadUrlExpiresAtUnixMs = now - 60_000,
+                    etag = "",
+                    failureReason = "Checksum mismatch",
+                    verifiedAtUnixMs = null,
+                    cleanupCompletedAtUnixMs = null
+                )
+            )
+            assertTrue(repository.listCleanupCandidates(now - 30_000, 10).any { it.id == failedId })
+            assertTrue(repository.markCleanupCompleted(failedId, now + 1))
+            assertEquals(now + 1, repository.find(failedId)?.cleanupCompletedAtUnixMs)
         } finally {
             dataSource.close()
         }

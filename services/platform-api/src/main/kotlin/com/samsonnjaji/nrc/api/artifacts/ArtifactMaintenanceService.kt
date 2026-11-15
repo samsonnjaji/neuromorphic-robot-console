@@ -30,8 +30,8 @@ data class ArtifactMaintenanceConfig(
     companion object {
         fun fromEnvironment(environment: Map<String, String> = System.getenv()): ArtifactMaintenanceConfig {
             fun seconds(name: String, defaultMs: Long, allowed: LongRange): Long {
-                val value = environment[name]?.takeIf { it.isNotBlank() }?.toLongOrNull()
-                    ?: return defaultMs
+                val raw = environment[name]?.takeIf { it.isNotBlank() } ?: return defaultMs
+                val value = requireNotNull(raw.toLongOrNull()) { "$name must be an integer number of seconds." }
                 require(value in allowed) { "$name is outside the supported range." }
                 return value * 1_000
             }
@@ -39,9 +39,13 @@ data class ArtifactMaintenanceConfig(
                 pendingUploadTtlMs = seconds("NRC_ARTIFACT_PENDING_UPLOAD_TTL_SECONDS", DEFAULT_PENDING_UPLOAD_TTL_MS, 60L..2_592_000L),
                 cleanupGraceMs = seconds("NRC_ARTIFACT_CLEANUP_GRACE_SECONDS", DEFAULT_CLEANUP_GRACE_MS, 0L..604_800L),
                 cleanupIntervalMs = seconds("NRC_ARTIFACT_CLEANUP_INTERVAL_SECONDS", DEFAULT_CLEANUP_INTERVAL_MS, 1L..86_400L),
-                cleanupBatchSize = environment["NRC_ARTIFACT_CLEANUP_BATCH_SIZE"]?.toIntOrNull()
-                    ?.also { require(it in 1..1_000) { "NRC_ARTIFACT_CLEANUP_BATCH_SIZE must be between 1 and 1000." } }
-                    ?: DEFAULT_CLEANUP_BATCH_SIZE
+                cleanupBatchSize = environment["NRC_ARTIFACT_CLEANUP_BATCH_SIZE"]
+                    ?.takeIf { it.isNotBlank() }
+                    ?.let { raw ->
+                        val value = requireNotNull(raw.toIntOrNull()) { "NRC_ARTIFACT_CLEANUP_BATCH_SIZE must be an integer." }
+                        require(value in 1..1_000) { "NRC_ARTIFACT_CLEANUP_BATCH_SIZE must be between 1 and 1000." }
+                        value
+                    } ?: DEFAULT_CLEANUP_BATCH_SIZE
             )
         }
     }
@@ -80,7 +84,7 @@ class ArtifactMaintenanceService(
                         }
                         RepositoryUpdate.NotFound, RepositoryUpdate.InvalidTransition -> null
                     }
-                    "ABORTED" -> candidate.takeIf { it.cleanupCompletedAtUnixMs == null }
+                    "ABORTED", "FAILED" -> candidate.takeIf { it.cleanupCompletedAtUnixMs == null }
                     else -> null
                 } ?: continue
 

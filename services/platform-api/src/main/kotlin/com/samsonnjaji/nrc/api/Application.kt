@@ -559,7 +559,7 @@ fun Application.module(
                             etag = verification.etag,
                             failureReason = "Uploaded size does not match the declared size."
                         )
-                        bestEffortDelete(storage, record.objectKey)
+                        bestEffortDelete(artifactRepository, storage, record.id, record.objectKey)
                         call.respond(HttpStatusCode.Conflict, ApiError("artifact_size_mismatch", "Uploaded object size does not match the declared size."))
                         return@post
                     }
@@ -570,7 +570,7 @@ fun Application.module(
                             etag = verification.etag,
                             failureReason = "SHA-256 checksum verification failed."
                         )
-                        bestEffortDelete(storage, record.objectKey)
+                        bestEffortDelete(artifactRepository, storage, record.id, record.objectKey)
                         call.respond(HttpStatusCode.Conflict, ApiError("artifact_checksum_mismatch", "Uploaded object SHA-256 does not match the declared checksum."))
                         return@post
                     }
@@ -735,8 +735,18 @@ private fun isUuid(value: String): Boolean = runCatching {
     java.util.UUID.fromString(value)
 }.isSuccess
 
-private suspend fun bestEffortDelete(storage: ArtifactObjectStorage, objectKey: String) {
-    try { storage.deleteObject(objectKey) }
-    catch (cancelled: CancellationException) { throw cancelled }
-    catch (_: Exception) { /* orphan cleanup is handled by storage maintenance */ }
+private suspend fun bestEffortDelete(
+    repository: ArtifactRepository,
+    storage: ArtifactObjectStorage,
+    artifactId: String,
+    objectKey: String
+) {
+    try {
+        storage.deleteObject(objectKey)
+        repository.markCleanupCompleted(artifactId, System.currentTimeMillis())
+    } catch (cancelled: CancellationException) {
+        throw cancelled
+    } catch (_: Exception) {
+        // Failed artifact cleanup is retried by the maintenance worker after upload URLs expire.
+    }
 }

@@ -264,6 +264,7 @@ class JdbcArtifactRepository(
         const val LIST_CLEANUP_SQL = """
             SELECT $FIND_COLUMNS FROM nrc_artifacts
             WHERE (status = 'PENDING_UPLOAD' AND upload_url_expires_at_unix_ms <= ?)
+               OR (status = 'FAILED' AND upload_url_expires_at_unix_ms <= ? AND cleanup_completed_at_unix_ms IS NULL)
                OR (status = 'ABORTED' AND cleanup_completed_at_unix_ms IS NULL)
             ORDER BY upload_url_expires_at_unix_ms ASC, created_at_unix_ms ASC, id ASC
             LIMIT ?
@@ -283,7 +284,7 @@ class JdbcArtifactRepository(
         """
         const val MARK_CLEANUP_COMPLETED_SQL = """
             UPDATE nrc_artifacts SET cleanup_completed_at_unix_ms = ?
-            WHERE id = ? AND status = 'ABORTED' AND cleanup_completed_at_unix_ms IS NULL
+            WHERE id = ? AND status IN ('ABORTED', 'FAILED') AND cleanup_completed_at_unix_ms IS NULL
         """
     }
 }
