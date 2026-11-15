@@ -4,15 +4,16 @@
 **Repository:** https://github.com/samsonnjaji/neuromorphic-robot-console  
 **Base branch:** `main`
 **Active development branch:** `feat/experiment-recording-lifecycle`  
-**Last verified implementation commit:** `65fbb6194a9dc03e8bebc09172aabee4dafab142`  
-**Implementation CI:** [Run 20 — success](https://github.com/samsonnjaji/neuromorphic-robot-console/actions/runs/43696350093)  
-**Last documentation commit before this handoff refresh:** `a4f2b30aceac95871d601f901c5034eb3874df2c`, [Run 21 — success](https://github.com/samsonnjaji/neuromorphic-robot-console/actions/runs/43696578541).
+**Latest feature commit:** `a5d6d5965de186a44009f24f6cdb76020ec8fe77`  
+**Feature PR:** [PR #13 — experiment and recording lifecycle](https://github.com/samsonnjaji/neuromorphic-robot-console/pull/13)  
+**Push CI:** [Run 25 — success](https://github.com/samsonnjaji/neuromorphic-robot-console/actions/runs/43707369909)  
+**Pull-request CI:** [Run 26 — success](https://github.com/samsonnjaji/neuromorphic-robot-console/actions/runs/43707445882).
 
 ## 1. Instruction for the next ChatGPT session
 
 Continue work in the existing GitHub repository. Do not restart the architecture exercise and do not ask the user to repeat prior decisions. First read this file, then inspect the current `main` branch and the latest GitHub Actions run. The remote repository is the source of truth. The handoff itself may be updated by later documentation commits; always verify the current branch head and latest run before acting.
 
-The user wants to be told explicitly when to pull the code onto their Windows PC and open it in Cursor for application testing. **The first local testing gate has been completed.** On 2026-11-15 the user confirmed Windows 11/JDK 17, Gradle 9.7, Android SDK, Docker engine through Ubuntu WSL, PostgreSQL on host port 5435, API health and experiment create/get/list, persistence across API restart, desktop REST/WebSocket telemetry relay and Android debug build. Do not ask for another local pull until the current feature branch passes CI and there is a concrete local integration task.
+The user wants to be told explicitly when to pull the code onto their Windows PC and open it in Cursor for application testing. The first local gate was completed on 2026-11-15: Windows 11/JDK 17, Gradle 9.7, Android SDK, Docker engine through Ubuntu WSL, PostgreSQL on host port 5435, API health and experiment CRUD, persistence across API restart, desktop REST/WebSocket relay and Android debug build. The new experiment-run and recording-session feature now passes both push CI Run 25 and PR CI Run 26. **The next action is to tell the user to pull `feat/experiment-recording-lifecycle` and run the new local migration/API smoke test before MinIO work.**
 
 Keep this handoff file current after each substantial milestone. Record commit SHAs, CI run links, implemented work, known issues and the next exact task. Do not claim tests passed without checking the run.
 
@@ -54,8 +55,12 @@ No remote robot actuation in the initial release. Any later control plane needs 
 - Telemetry POST ingestion and WebSocket stream endpoint.
 - Typed validation, stream sequence guard and structured errors.
 - In-memory repository for tests/no-database local development.
-- PostgreSQL JDBC repository using HikariCP.
-- Flyway migration for experiment metadata.
+- PostgreSQL JDBC repositories using HikariCP for experiment definitions, experiment runs and recording-session metadata.
+- Flyway V1/V2 migrations for experiment definitions, runs and recording sessions.
+- Validated run lifecycle: CREATED -> RUNNING -> COMPLETED/FAILED/CANCELLED, with CREATED -> CANCELLED.
+- Validated recording lifecycle: CREATED -> RECORDING -> FINALIZED/FAILED/CANCELLED, with CREATED -> CANCELLED.
+- Run configuration/source revision provenance, result summary and failure reason.
+- Recording format/source identity/metadata/sample count and lifecycle timestamps.
 - Docker Compose PostgreSQL service in `deploy/local/compose.yaml`.
 - PowerShell local startup and smoke-test guide in `deploy/local/README.md`.
 - PostgreSQL persistence integration test, wired to CI PostgreSQL service.
@@ -86,12 +91,14 @@ No remote robot actuation in the initial release. Any later control plane needs 
 - Run 19, commit `d198efb`, passed the full workflow including Gradle wrapper checksum and Compose validation.
 - Run 20, commit `65fbb61`, passed the full workflow using the checked-in Gradle wrapper: wrapper checksum, JSON Schema/OpenAPI validation, Docker Compose configuration, core tests, desktop compile, API tests, PostgreSQL persistence integration and Android debug build.
 - Run 21, documentation commit `a4f2b30`, passed the same full workflow.
+- Run 25, feature push commit `a5d6d59`, passed schema/OpenAPI validation, Compose validation, core/desktop/API tests, PostgreSQL lifecycle persistence integration and Android debug build.
+- Run 26, PR validation for PR #13, passed the same full workflow.
 
 ## 4. Current limitations — do not misrepresent
 
 - No authentication or device credential flow.
 - API is a local MVP and binds to `127.0.0.1` by default.
-- PostgreSQL stores experiment metadata only.
+- PostgreSQL stores experiment definitions, experiment-run metadata and recording-session metadata; raw recording binaries are not stored there.
 - Telemetry WebSocket fan-out is in memory, not durable.
 - No S3-compatible object storage or recording upload.
 - Desktop API relay mode uses synthetic telemetry; no real robot is connected.
@@ -102,12 +109,11 @@ No remote robot actuation in the initial release. Any later control plane needs 
 
 ## 5. Immediate next tasks
 
-1. Complete and validate `feat/experiment-recording-lifecycle`: persistent experiment-run records, lifecycle transitions, recording-session metadata and API tests.
-2. Verify the PostgreSQL migration and lifecycle repositories through GitHub Actions.
+1. Ask the user to pull `feat/experiment-recording-lifecycle` into Cursor and run the local V2 migration plus experiment-run/recording-session API smoke test.
+2. Resolve any workstation-specific migration or API issues without deleting existing local database records.
 3. Add artifact metadata registration and S3-compatible object storage using MinIO for local development, with upload coordination and SHA-256 verification.
 4. Add authentication and device credentials before any non-local deployment.
 5. Continue with MCAP/ROS 2 ingestion, Python inference workers, measured SNN/conventional baselines and reproducible reports.
-6. Ask the user to pull the feature branch only when CI is green and a concrete local end-to-end storage or UI integration test is required.
 
 ## 6. Local testing instructions
 

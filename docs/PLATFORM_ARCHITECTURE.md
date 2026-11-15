@@ -1,7 +1,7 @@
 # NRC Platform Architecture
 
 **Status:** Target architecture, accepted and being implemented in validated stages  
-**Current baseline:** Kotlin Multiplatform core, Android/desktop simulator clients, Ktor API MVP and PostgreSQL experiment metadata  
+**Current baseline:** Kotlin Multiplatform core, Android/desktop simulator clients, Ktor API MVP, PostgreSQL experiment/run/recording metadata and validated local desktop relay  
 **Architecture principle:** one shared robotics intelligence and experiment model, multiple clients and deployment modes.
 
 ## 1. Product boundary
@@ -89,7 +89,9 @@ The existing `composeApp` remains the Compose presentation/application module an
 - `WS /api/v1/robots/{robotId}/stream` for live telemetry fan-out.
 - Typed request validation, sequence validation and structured error responses.
 - In-memory repository for tests and no-database development.
-- PostgreSQL repository for durable experiment metadata, HikariCP connection pooling and Flyway migrations.
+- PostgreSQL repositories for durable experiment definitions, experiment runs and recording-session metadata, using HikariCP and Flyway migrations.
+- Experiment runs retain a source revision, JSON configuration snapshot, lifecycle timestamps, result summary and failure reason.
+- Recording sessions retain format, source identity, metadata, sample count and lifecycle timestamps. The current implementation registers metadata only; it does not upload or retain recording binaries.
 - Local PostgreSQL service definition in `deploy/local/compose.yaml`.
 
 The clients must not connect directly to databases or inference workers.
@@ -137,7 +139,7 @@ Android and desktop currently share a Kotlin Multiplatform Compose codebase. The
 
 ## 4. Data and storage architecture
 
-- **PostgreSQL:** currently stores experiment metadata. Target scope also includes users, organisations, device registry, manifests, model/dataset metadata, report indexes and audit events.
+- **PostgreSQL:** currently stores experiment definitions, experiment-run metadata and recording-session metadata. Target scope also includes users, organisations, device registry, manifests, model/dataset metadata, report indexes and audit events.
 - **S3-compatible object storage:** planned for large MCAP/ROS bag recordings, image/video sequences, benchmark artifacts and exported reports.
 - **Local edge buffer:** planned for temporary recording chunks and queued telemetry when offline.
 - **Client cache:** limited recent state and metadata; never the canonical experiment record.
@@ -167,12 +169,20 @@ The current local development setup starts PostgreSQL with Docker Compose. API m
 | `GET /api/v1/experiments` | List recent experiment metadata |
 | `POST /api/v1/experiments` | Create experiment metadata |
 | `GET /api/v1/experiments/{experimentId}` | Retrieve experiment metadata |
+| `POST /api/v1/experiments/{experimentId}/runs` | Create an experiment run |
+| `GET /api/v1/experiments/{experimentId}/runs` | List experiment runs |
+| `GET /api/v1/runs/{runId}` | Retrieve an experiment run |
+| `POST /api/v1/runs/{runId}/transition` | Advance a run through validated lifecycle states |
+| `POST /api/v1/runs/{runId}/recordings` | Register a recording session |
+| `GET /api/v1/runs/{runId}/recordings` | List recording sessions for a run |
+| `GET /api/v1/recordings/{recordingId}` | Retrieve recording-session metadata |
+| `POST /api/v1/recordings/{recordingId}/transition` | Advance a recording-session lifecycle state |
 | `POST /api/v1/robots/{robotId}/telemetry` | Validate and ingest a telemetry snapshot |
 | `WS /api/v1/robots/{robotId}/stream` | Subscribe to live telemetry snapshots |
 
 ### Planned API routes
 
-Robot registry, authenticated users/organisations, experiment run orchestration, reports, recording upload coordination, model registry and dataset registry will be added in subsequent milestones.
+Robot registry, authenticated users/organisations, artifact registration and S3-compatible recording upload coordination, model registry and dataset registry will be added in subsequent milestones.
 
 ### Versioned contracts
 
@@ -246,7 +256,9 @@ neuromorphic-robot-console/
 | In-memory experiment provenance manifest | Implemented |
 | Telemetry and manifest JSON schemas + CI fixtures | Implemented |
 | Ktor API health/experiment/telemetry routes | Implemented MVP |
-| PostgreSQL experiment metadata repository + Flyway migration | Implemented; CI verification in progress |
+| PostgreSQL experiment/run/recording metadata repositories + Flyway migrations | Implemented; CI verified |
+| Experiment-run lifecycle API and state validation | Implemented; CI verified |
+| Recording-session metadata lifecycle API | Implemented; CI verified |
 | Local PostgreSQL Docker Compose setup | Implemented |
 | Authentication and organisation access controls | Planned |
 | S3-compatible recording storage | Planned |
