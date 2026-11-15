@@ -1,7 +1,7 @@
 # NRC Platform Architecture
 
-**Status:** Target architecture, approved for staged implementation  
-**Current baseline:** Kotlin Multiplatform Android + desktop simulator  
+**Status:** Target architecture, accepted and being implemented in stages  
+**Current baseline:** Kotlin Multiplatform core + Android and desktop simulator clients  
 **Architecture principle:** one shared robotics intelligence and experiment model, multiple clients and deployment modes.
 
 ## 1. Product boundary
@@ -60,7 +60,7 @@ The diagram is the target architecture, not a claim that all services already ex
 Responsibilities:
 - Canonical domain models and versioned experiment definitions.
 - Telemetry validation and sequence/timestamp handling.
-- Environment scenario definitions and experiment orchestration.
+- Environment scenario definitions and experiment evaluation.
 - Deterministic replay and comparison logic.
 - Metric definitions and report models.
 - Client SDK and shared application state where appropriate.
@@ -68,11 +68,13 @@ Responsibilities:
 Rules:
 - No direct ROS 2 dependency in shared core.
 - No database or cloud-vendor dependency in domain logic.
-- No UI dependency in the eventual extracted core module.
+- No UI dependency in the core module.
 - Keep source timestamps, sequence IDs, model identity and dataset provenance.
 - Separate measured values from synthetic or estimated values.
 
-**Current state:** these responsibilities are partly implemented in `composeApp`. The domain and presentation code have not yet been physically separated into independent Gradle modules. That extraction is a planned refactor, not completed work.
+**Current state:** the independent `core/nrc-core` Kotlin Multiplatform module has been created. It contains the shared telemetry/domain models, stream validation, safety-envelope logic, mission recording, robustness evaluation and transport interfaces. It has no Compose, database, network-client or ROS 2 dependency. JVM core tests and the Android application build pass in CI.
+
+The existing `composeApp` remains the Compose presentation/application module and currently contains the demo telemetry source and dashboard wiring. More use-case interfaces and further domain/application separation can be introduced as the platform API is built.
 
 ### B. NRC Platform API — shared backend
 
@@ -172,6 +174,10 @@ The first local development deployment can use Docker Compose with PostgreSQL an
 
 These are proposed v1 routes; the backend has not been implemented.
 
+### Versioned contracts
+
+The v1 telemetry envelope and experiment manifest are stored under `schemas/`. Positive and negative fixtures are checked by `scripts/validate_schemas.py` in GitHub Actions. This verifies the JSON contracts; it does not yet mean a live API server is enforcing them.
+
 ## 6. Deployment modes
 
 ### Local laboratory mode
@@ -197,25 +203,25 @@ All three modes use the same experiment contracts and client-facing API.
 - Dataset consent, retention and access controls where personal or sensitive data is present.
 - No remote actuation in the first release.
 
-Any future control capability requires a separate threat model, authenticated command protocol, robot-side speed and geofence limits, watchdog, physical emergency-stop circuit, fail-safe state and independent validation. A user-interface emergency-stop button is not a certified safety function.
+Any future control capability requires a separate threat model, authenticated command protocol, robot-side speed and geofence limits, watchdog, fail-safe state, physical emergency-stop circuit and independent validation. A user-interface emergency-stop button is not a certified safety function.
 
 ## 8. Repository evolution
 
-The repository should evolve toward the following logical structure. This is a target layout; do not move existing source files in a large unreviewed change.
+The repository currently uses `core/nrc-core` for shared logic and `composeApp` / `androidApp` for the existing clients. It should evolve toward the following logical structure. Do not move existing source files in a large unreviewed change.
 
 ```text
 neuromorphic-robot-console/
 ├── core/
 │   └── nrc-core/                 # Kotlin Multiplatform domain/experiment SDK
+├── composeApp/                   # Existing shared Compose presentation + desktop
+├── androidApp/                   # Existing Android application shell
 ├── clients/
-│   ├── android/                  # Android application
-│   ├── desktop/                  # Desktop engineering console
-│   └── web/                      # Browser client
+│   └── web/                      # Browser client (planned)
 ├── services/
-│   ├── platform-api/             # Ktor REST/WebSocket backend
-│   └── inference-runtime/        # Python model execution workers
+│   ├── platform-api/             # Ktor REST/WebSocket backend (planned)
+│   └── inference-runtime/        # Python model execution workers (planned)
 ├── edge/
-│   └── ros2-gateway/             # Read-only ROS 2 and recording adapter
+│   └── ros2-gateway/             # Read-only ROS 2 and recording adapter (planned)
 ├── schemas/
 │   ├── telemetry-envelope.v1.schema.json
 │   └── experiment-manifest.v1.schema.json
@@ -227,8 +233,6 @@ neuromorphic-robot-console/
 │   └── ...
 └── scripts/
 ```
-
-The existing `composeApp` and `androidApp` remain the working clients during migration. Extract the pure domain and experiment logic before introducing cross-module dependencies.
 
 ## 9. Quality gates
 
@@ -247,11 +251,12 @@ Every milestone must preserve these conditions:
 
 | Capability | Status |
 |---|---|
-| Kotlin Multiplatform Android/desktop foundation | Implemented |
+| Independent Kotlin Multiplatform `nrc-core` module | Implemented and CI-verified |
+| Android/desktop Compose clients | Implemented foundation |
 | Simulator, sensor views and mission replay | Implemented |
 | Synthetic Environment Robustness Lab | Implemented |
 | In-memory experiment provenance manifest | Implemented |
-| Shared domain extracted into independent core module | Planned |
+| Telemetry and manifest JSON schemas + CI fixtures | Implemented and CI-verified |
 | Ktor API and identity layer | Planned |
 | PostgreSQL and object storage | Planned |
 | ROS 2 edge gateway | Planned |

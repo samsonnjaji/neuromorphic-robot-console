@@ -20,7 +20,8 @@ The target architecture is staged. A planned component is not considered impleme
 
 ## Current prototype
 
-- Kotlin Multiplatform shared application for Android and desktop.
+- Independent Kotlin Multiplatform `nrc-core` module for shared domain and experiment logic.
+- Kotlin Multiplatform Compose application foundation for Android and desktop.
 - Hardware-free robot telemetry simulator.
 - Event-camera and 2D LiDAR views.
 - IMU, pose, detection and SNN activity telemetry.
@@ -30,7 +31,7 @@ The target architecture is staged. A planned component is not considered impleme
 - Environment Robustness Lab with deterministic synthetic stress profiles.
 - Versioned in-memory experiment manifest attached to stress-test reports.
 
-**Important:** current robustness profiles are illustrative synthetic perturbations. They are not calibrated weather physics, measured model accuracy or safety certification. The API backend, independent core module, web client, ROS 2 gateway and inference workers are not yet implemented.
+**Important:** current robustness profiles are illustrative synthetic perturbations. They are not calibrated weather physics, measured model accuracy or safety certification. The API backend, web client, ROS 2 gateway and inference workers are not yet implemented.
 
 ## Architecture and engineering plan
 
