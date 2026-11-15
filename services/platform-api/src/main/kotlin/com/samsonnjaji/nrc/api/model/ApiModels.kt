@@ -126,7 +126,9 @@ data class ArtifactRecord(
     val etag: String = "",
     val failureReason: String = "",
     val createdAtUnixMs: Long,
-    val verifiedAtUnixMs: Long? = null
+    val verifiedAtUnixMs: Long? = null,
+    @Transient val uploadUrlExpiresAtUnixMs: Long = 0L,
+    @Transient val cleanupCompletedAtUnixMs: Long? = null
 )
 
 @Serializable

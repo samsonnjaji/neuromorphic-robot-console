@@ -1,5 +1,7 @@
 package com.samsonnjaji.nrc.api
 
+import com.samsonnjaji.nrc.api.artifacts.ArtifactMaintenanceConfig
+import com.samsonnjaji.nrc.api.artifacts.ArtifactMaintenanceService
 import com.samsonnjaji.nrc.api.artifacts.ArtifactRepository
 import com.samsonnjaji.nrc.api.artifacts.InMemoryArtifactRepository
 import com.samsonnjaji.nrc.api.artifacts.JdbcArtifactRepository
@@ -17,6 +19,11 @@ import com.samsonnjaji.nrc.api.storage.S3CompatibleArtifactObjectStorage
 import com.samsonnjaji.nrc.api.storage.S3ObjectStorageConfig
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 import org.flywaydb.core.Flyway
 import java.net.URI
 
@@ -66,6 +73,9 @@ fun main() {
     }
 
     val objectStorageEndpoint = System.getenv("NRC_OBJECT_STORE_ENDPOINT")?.takeIf { it.isNotBlank() }
+    if (objectStorageEndpoint != null && dataSource == null) {
+        error("NRC_DATABASE_URL is required when object storage is configured so artifact metadata remains durable.")
+    }
     val artifactObjectStorage = objectStorageEndpoint?.let { endpoint ->
         val accessKey = requireNotNull(System.getenv("NRC_OBJECT_STORE_ACCESS_KEY")) {
             "NRC_OBJECT_STORE_ACCESS_KEY is required when object storage is configured."
@@ -92,11 +102,22 @@ fun main() {
         println("NRC_OBJECT_STORE_ENDPOINT is not configured; artifact upload/download endpoints will return 503.")
     }
 
+    val maintenanceConfig = ArtifactMaintenanceConfig.fromEnvironment()
+    val maintenanceScope = if (artifactObjectStorage != null) {
+        CoroutineScope(SupervisorJob() + Dispatchers.IO).also { scope ->
+            val service = ArtifactMaintenanceService(artifactRepository, artifactObjectStorage, maintenanceConfig)
+            scope.launch { service.runPeriodically() }
+        }
+    } else {
+        null
+    }
+
     val host = System.getenv("NRC_API_HOST") ?: "127.0.0.1"
     val port = System.getenv("NRC_API_PORT")?.toIntOrNull() ?: 8080
 
     if (dataSource != null || artifactObjectStorage != null) {
         Runtime.getRuntime().addShutdownHook(Thread {
+            maintenanceScope?.cancel()
             artifactObjectStorage?.close()
             dataSource?.close()
         })
@@ -112,7 +133,8 @@ fun main() {
                 experimentRunRepository = experimentRunRepository,
                 recordingSessionRepository = recordingSessionRepository,
                 artifactRepository = artifactRepository,
-                artifactObjectStorage = artifactObjectStorage
+                artifactObjectStorage = artifactObjectStorage,
+                artifactMaintenanceConfig = maintenanceConfig
             )
         }
     ).start(wait = true)

@@ -178,13 +178,18 @@ class S3CompatibleArtifactObjectStorage(
 
     override suspend fun abortMultipartUpload(objectKey: String, uploadId: String) =
         withContext(Dispatchers.IO) {
-            client.abortMultipartUpload(
-                AbortMultipartUploadRequest.builder()
-                    .bucket(bucket)
-                    .key(objectKey)
-                    .uploadId(uploadId)
-                    .build()
-            )
+            try {
+                client.abortMultipartUpload(
+                    AbortMultipartUploadRequest.builder()
+                        .bucket(bucket)
+                        .key(objectKey)
+                        .uploadId(uploadId)
+                        .build()
+                )
+            } catch (failure: S3Exception) {
+                val errorCode = failure.awsErrorDetails()?.errorCode()
+                if (errorCode != "NoSuchUpload" && failure.statusCode() != 404) throw failure
+            }
             Unit
         }
 
