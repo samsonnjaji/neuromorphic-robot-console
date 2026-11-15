@@ -49,13 +49,15 @@ class MissionRecorder(
     }
 
     fun append(telemetry: RobotTelemetry): Boolean {
-        if (!isRecording || frames.size >= maxFrames) {
+        if (!isRecording || frames.size >= maxFrames || telemetry.timestampMs < 0L) {
             isRecording = false
             return false
         }
 
         val first = firstTimestampMs ?: telemetry.timestampMs.also { firstTimestampMs = it }
-        val offset = (telemetry.timestampMs - first).coerceAtLeast(0L)
+        val offset = telemetry.timestampMs - first
+        if (offset < 0L) return false
+
         val previousOffset = frames.lastOrNull()?.offsetMs
         if (previousOffset != null && offset < previousOffset) return false
 
