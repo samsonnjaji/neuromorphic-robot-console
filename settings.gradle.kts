@@ -15,4 +15,5 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "neuromorphic-robot-console"
-include(":composeApp", ":androidApp")
+include(":nrc-core", ":composeApp", ":androidApp")
+project(":nrc-core").projectDir = file("core/nrc-core")
