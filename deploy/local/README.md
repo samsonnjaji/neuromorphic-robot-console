@@ -11,6 +11,8 @@ docker compose -f deploy/local/compose.yaml up -d postgres
 docker compose -f deploy/local/compose.yaml ps
 ```
 
+By default PostgreSQL is exposed on host port `5432`. If another local PostgreSQL service already owns that port, set `NRC_POSTGRES_HOST_PORT=5435` in the repository-root `.env` file before starting Compose. The container still listens on `5432`; only the host-side port changes. In that case, use `jdbc:postgresql://localhost:5435/nrc` for `NRC_DATABASE_URL` below. The default remains `5432` for machines without a port conflict.
+
 The local-only default password is `nrc_local_dev_only`. For a custom local password, copy `.env.example` to `.env`, set `NRC_DB_PASSWORD`, and use the same value in the API terminal. The root `.env` file is ignored by Git.
 
 Do not reuse a development password outside a local workstation.
@@ -20,7 +22,7 @@ Do not reuse a development password outside a local workstation.
 Open a second terminal at the repository root:
 
 ```powershell
-$env:NRC_DATABASE_URL = "jdbc:postgresql://localhost:5432/nrc"
+$env:NRC_DATABASE_URL = "jdbc:postgresql://localhost:5432/nrc" # Use localhost:5435 when NRC_POSTGRES_HOST_PORT=5435
 $env:NRC_DATABASE_USER = "nrc"
 $env:NRC_DATABASE_PASSWORD = "nrc_local_dev_only"
 $env:NRC_API_HOST = "127.0.0.1"

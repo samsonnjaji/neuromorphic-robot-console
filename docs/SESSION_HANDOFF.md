@@ -2,7 +2,8 @@
 
 **Last updated:** 2026-11-15  
 **Repository:** https://github.com/samsonnjaji/neuromorphic-robot-console  
-**Active branch:** `main`  
+**Base branch:** `main`
+**Active development branch:** `feat/experiment-recording-lifecycle`  
 **Last verified implementation commit:** `65fbb6194a9dc03e8bebc09172aabee4dafab142`  
 **Implementation CI:** [Run 20 — success](https://github.com/samsonnjaji/neuromorphic-robot-console/actions/runs/43696350093)  
 **Last documentation commit before this handoff refresh:** `a4f2b30aceac95871d601f901c5034eb3874df2c`, [Run 21 — success](https://github.com/samsonnjaji/neuromorphic-robot-console/actions/runs/43696578541).
@@ -11,7 +12,7 @@
 
 Continue work in the existing GitHub repository. Do not restart the architecture exercise and do not ask the user to repeat prior decisions. First read this file, then inspect the current `main` branch and the latest GitHub Actions run. The remote repository is the source of truth. The handoff itself may be updated by later documentation commits; always verify the current branch head and latest run before acting.
 
-The user wants to be told explicitly when to pull the code onto their Windows PC and open it in Cursor for application testing. **The local testing gate is met:** the latest implementation CI is green, the Gradle wrapper is included and verified, Docker Compose configuration passes validation, and local PowerShell instructions are committed. The next action is to tell the user to pull and run the desktop API-relay and Android build smoke tests.
+The user wants to be told explicitly when to pull the code onto their Windows PC and open it in Cursor for application testing. **The first local testing gate has been completed.** On 2026-11-15 the user confirmed Windows 11/JDK 17, Gradle 9.7, Android SDK, Docker engine through Ubuntu WSL, PostgreSQL on host port 5435, API health and experiment create/get/list, persistence across API restart, desktop REST/WebSocket telemetry relay and Android debug build. Do not ask for another local pull until the current feature branch passes CI and there is a concrete local integration task.
 
 Keep this handoff file current after each substantial milestone. Record commit SHAs, CI run links, implemented work, known issues and the next exact task. Do not claim tests passed without checking the run.
 
@@ -101,13 +102,12 @@ No remote robot actuation in the initial release. Any later control plane needs 
 
 ## 5. Immediate next tasks
 
-1. Tell the user the build is green and ask them to pull the latest `main` branch into Cursor.
-2. Have them start local PostgreSQL and the API using `deploy/local/README.md`.
-3. Have them launch desktop with `NRC_API_BASE_URL=http://127.0.0.1:8080` and confirm `API RELAY · SYNTHETIC ONLINE`, live event/LiDAR/IMU/SNN panels and no API errors.
-4. Have them run `.\gradlew.bat :androidApp:assembleDebug`; Android remains simulator-only for now.
-5. Ask for the first failing terminal output or screenshot if anything does not work. Fix local issues before starting the next major feature.
-6. After local feedback, proceed with S3-compatible object storage and recording upload, then authentication/device identity.
-7. Keep Android API integration, ROS 2 gateway, Python inference runtime and web client in later milestones.
+1. Complete and validate `feat/experiment-recording-lifecycle`: persistent experiment-run records, lifecycle transitions, recording-session metadata and API tests.
+2. Verify the PostgreSQL migration and lifecycle repositories through GitHub Actions.
+3. Add artifact metadata registration and S3-compatible object storage using MinIO for local development, with upload coordination and SHA-256 verification.
+4. Add authentication and device credentials before any non-local deployment.
+5. Continue with MCAP/ROS 2 ingestion, Python inference workers, measured SNN/conventional baselines and reproducible reports.
+6. Ask the user to pull the feature branch only when CI is green and a concrete local end-to-end storage or UI integration test is required.
 
 ## 6. Local testing instructions
 
@@ -117,6 +117,8 @@ From the repository root in PowerShell:
 ```powershell
 docker compose -f deploy/local/compose.yaml up -d postgres
 ```
+
+The default host port is `5432`. If the host already has PostgreSQL on that port, set `NRC_POSTGRES_HOST_PORT=5435` in the repository-root `.env` file and use `jdbc:postgresql://localhost:5435/nrc` for the API. Docker still exposes PostgreSQL internally on container port `5432`.
 
 **Run API in terminal 1**
 ```powershell

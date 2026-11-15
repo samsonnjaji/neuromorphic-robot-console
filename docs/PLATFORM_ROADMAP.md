@@ -43,8 +43,10 @@ This roadmap sequences platform work so that every phase produces a usable, test
 - [x] Add a desktop API-relay source that sends synthetic telemetry through REST and receives it over WebSocket.
 - [x] Add the Gradle 9.7.0 wrapper and verify its JAR checksum.
 - [x] Add PowerShell startup instructions and validate Docker Compose configuration in CI.
-- [ ] Complete desktop API-relay and Android build smoke tests on the user's Windows PC in Cursor.
-- [ ] Add object storage and recording upload coordination.
+- [x] Complete desktop API-relay and Android build smoke tests on the user's Windows PC in Cursor (verified 2026-11-15; Docker engine accessed through Ubuntu WSL and PostgreSQL exposed on host port 5435).
+- [ ] Add persistent experiment-run lifecycle and validated state transitions (implementation underway on `feat/experiment-recording-lifecycle`).
+- [ ] Add recording-session metadata lifecycle and PostgreSQL persistence (implementation underway on `feat/experiment-recording-lifecycle`).
+- [ ] Add artifact registry, S3-compatible object storage and recording upload coordination.
 - [ ] Add authentication and device credentials.
 - [ ] Verify Android API integration after desktop behavior is validated.
 
@@ -52,9 +54,9 @@ This roadmap sequences platform work so that every phase produces a usable, test
 
 **Latest repository verification:** documentation/handoff commit `a4f2b30aceac95871d601f901c5034eb3874df2c`, [GitHub Actions Run 21](https://github.com/samsonnjaji/neuromorphic-robot-console/actions/runs/43696578541), also passed.
 
-**Current gate:** ready for the first local Cursor smoke test. The user has not yet pulled the repository.
+**Current gate:** the first local Cursor smoke test is complete. Windows 11/JDK 17 builds, PostgreSQL-backed experiment persistence, desktop REST/WebSocket telemetry relay and Android debug build were verified by the user on 2026-11-15. This new lifecycle feature must pass CI before requesting another local pull.
 
-**Exit criteria:** desktop client is confirmed locally to connect to the API, receive synthetic telemetry through WebSocket and read persisted experiment records.
+**Exit criteria:** met for the initial local baseline. The next exit criteria are persistent experiment runs and recording sessions, followed by object-storage-backed artifact upload.
 
 ## Phase 3 — Edge and real data
 
