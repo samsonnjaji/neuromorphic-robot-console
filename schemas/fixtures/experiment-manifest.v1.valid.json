@@ -1,0 +1,17 @@
+{
+  "manifestVersion": 1,
+  "experimentId": "NRC-DEMO-0001",
+  "sourceType": "SIMULATOR",
+  "sourceId": "nrc-demo-simulator",
+  "sourceSequence": 42,
+  "sourceTimestampMs": 4200,
+  "modelIdentifier": "demo-perception-stack",
+  "modelVersion": "simulated-v0.2",
+  "scenario": "HEAVY_RAIN",
+  "lidarRetention": 0.72,
+  "eventRetention": 0.82,
+  "addedEventNoiseFraction": 0.12,
+  "detectionConfidenceScale": 0.84,
+  "inferenceLatencyScale": 1.12,
+  "lidarNoiseMeters": 0.08
+}

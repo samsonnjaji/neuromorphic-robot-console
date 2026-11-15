@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "messageType": "telemetry.snapshot",
+  "robotId": "nrc-sim-001",
+  "sequence": 42,
+  "timestampUnixMs": 1794729600000,
+  "payload": {
+    "sequence": 42,
+    "timestampMs": 4200,
+    "connected": true,
+    "batteryPercent": 96,
+    "linearVelocityMps": 0.12,
+    "angularVelocityRadS": 0.01,
+    "xMeters": 1.25,
+    "yMeters": 0.8,
+    "headingRadians": 0.4,
+    "cpuLoadPercent": 28,
+    "inferenceLatencyMs": 8.6,
+    "eventRateHz": 12500,
+    "targetSpeedMps": 0.2,
+    "emergencyStop": false,
+    "missionRunning": true,
+    "detections": [
+      {
+        "label": "pedestrian",
+        "confidence": 0.94,
+        "bearingDegrees": -12.5
+      }
+    ],
+    "snnLayers": [
+      {
+        "layerName": "ALIF-1",
+        "activeNeurons": 128,
+        "neuronCount": 256,
+        "spikesPerSecond": 640,
+        "meanMembranePotentialMv": -61.2
+      }
+    ],
+    "lidar": [
+      {
+        "angleRadians": 0.2,
+        "distanceMeters": 2.4
+      }
+    ],
+    "events": [
+      {
+        "x": 0.42,
+        "y": 0.31,
+        "polarity": 1
+      }
+    ],
+    "imu": {
+      "accelerationX": 0.02,
+      "accelerationY": -0.01,
+      "accelerationZ": 9.81,
+      "angularVelocityZ": 0.01
+    }
+  }
+}
