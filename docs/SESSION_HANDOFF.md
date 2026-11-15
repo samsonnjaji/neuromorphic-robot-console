@@ -125,49 +125,56 @@ No remote robot actuation in the initial release. Any later control plane needs 
 
 ## 6. Local testing instructions
 
-The user's Windows checkout is `C:\Users\njaji\Projects\neuromorphic-robot-console`. Docker is available through Ubuntu WSL; Windows PowerShell does not expose `docker.exe`. Native PostgreSQL owns host port 5432, so the NRC container is exposed on host port 5435. The existing NRC PostgreSQL container, API and desktop app were still running at the last report.
+The user's Windows checkout is C:\\Users\\njaji\\Projects\\neuromorphic-robot-console. Docker is available through Ubuntu WSL; Windows PowerShell does not expose docker.exe. Native PostgreSQL owns host port 5432, so the NRC container is exposed on host port 5435.
 
-After PR #15 is merged (PR #14 artifact storage is already in `main`):
+After PR #15 is merged (PR #14 artifact storage is already in main):
 
 1. In PowerShell at the repository root:
    ```powershell
    git switch main
    git pull --ff-only origin main
-   Copy-Item .env.example .env
+   if (!(Test-Path .env)) { Copy-Item .env.example .env }
    ```
-2. Edit `.env`: set `NRC_POSTGRES_HOST_PORT=5435`; rename the earlier PostgreSQL Compose credential key to `NRC_DB_CREDENTIAL` while retaining its existing local value if reusing the current volume; populate the RustFS access and secret keys. Use the same database/object-store credentials in the API process.
-3. Stop the old API and desktop processes with Ctrl+C. Do not delete the existing PostgreSQL volume.
-4. Start PostgreSQL and RustFS from Ubuntu WSL:
+2. Edit the ignored .env: set NRC_POSTGRES_HOST_PORT=5435; rename the earlier PostgreSQL Compose credential key to NRC_DB_CREDENTIAL while retaining its existing value if reusing the current database volume; populate the RustFS access and secret keys. Never commit .env.
+3. Stop old API/desktop processes with Ctrl+C. Start PostgreSQL and RustFS from Ubuntu WSL:
    ```bash
    cd /mnt/c/Users/njaji/Projects/neuromorphic-robot-console
    docker compose -f deploy/local/compose.yaml up -d postgres rustfs
    docker compose -f deploy/local/compose.yaml ps
    ```
-5. In PowerShell, start the API with:
+4. In PowerShell, load the ignored local environment values and start the API:
    ```powershell
    $env:NRC_DATABASE_URL = "jdbc:postgresql://localhost:5435/nrc"
    $env:NRC_DATABASE_USER = "nrc"
-   $env:NRC_DATABASE_PASSWORD = "<existing local NRC_DB_CREDENTIAL from .env>"
+   $LocalEnv = @{}
+   Get-Content .env | ForEach-Object {
+       if ($_ -match '^\s*([^#=]+)=(.*)$') {
+           $LocalEnv[$matches[1].Trim()] = $matches[2].Trim()
+       }
+   }
+   $env:NRC_DATABASE_PASSWORD = $LocalEnv["NRC_DB_CREDENTIAL"]
+   $env:NRC_OBJECT_STORE_ENDPOINT = $LocalEnv["NRC_OBJECT_STORE_ENDPOINT"]
+   $env:NRC_OBJECT_STORE_ACCESS_KEY = $LocalEnv["NRC_OBJECT_STORE_ACCESS_KEY"]
+   $env:NRC_OBJECT_STORE_SECRET_KEY = $LocalEnv["NRC_OBJECT_STORE_SECRET_KEY"]
+   $env:NRC_OBJECT_STORE_BUCKET = $LocalEnv["NRC_OBJECT_STORE_BUCKET"]
+   $env:NRC_OBJECT_STORE_REGION = $LocalEnv["NRC_OBJECT_STORE_REGION"]
+   $env:NRC_OBJECT_STORE_PATH_STYLE = $LocalEnv["NRC_OBJECT_STORE_PATH_STYLE"]
+   $env:NRC_OBJECT_STORE_PRESIGN_TTL_SECONDS = $LocalEnv["NRC_OBJECT_STORE_PRESIGN_TTL_SECONDS"]
+   $env:NRC_ARTIFACT_PENDING_UPLOAD_TTL_SECONDS = $LocalEnv["NRC_ARTIFACT_PENDING_UPLOAD_TTL_SECONDS"]
+   $env:NRC_ARTIFACT_CLEANUP_GRACE_SECONDS = $LocalEnv["NRC_ARTIFACT_CLEANUP_GRACE_SECONDS"]
+   $env:NRC_ARTIFACT_CLEANUP_INTERVAL_SECONDS = $LocalEnv["NRC_ARTIFACT_CLEANUP_INTERVAL_SECONDS"]
+   $env:NRC_ARTIFACT_CLEANUP_BATCH_SIZE = $LocalEnv["NRC_ARTIFACT_CLEANUP_BATCH_SIZE"]
    $env:NRC_API_HOST = "127.0.0.1"
    $env:NRC_API_PORT = "8080"
-   $env:NRC_OBJECT_STORE_ENDPOINT = "http://127.0.0.1:9000"
-   $env:NRC_OBJECT_STORE_ACCESS_KEY = "<local NRC_OBJECT_STORE_ACCESS_KEY from .env>"
-   $env:NRC_OBJECT_STORE_SECRET_KEY = "same value as .env"
-   $env:NRC_OBJECT_STORE_BUCKET = "nrc-artifacts"
-   $env:NRC_OBJECT_STORE_REGION = "us-east-1"
-   $env:NRC_OBJECT_STORE_PATH_STYLE = "true"
-   $env:NRC_OBJECT_STORE_PRESIGN_TTL_SECONDS = "900"
-$env:NRC_ARTIFACT_PENDING_UPLOAD_TTL_SECONDS = "86400"
-$env:NRC_ARTIFACT_CLEANUP_GRACE_SECONDS = "3600"
-$env:NRC_ARTIFACT_CLEANUP_INTERVAL_SECONDS = "900"
-$env:NRC_ARTIFACT_CLEANUP_BATCH_SIZE = "100"
    .\gradlew.bat :platform-api:run
    ```
-6. Verify `GET /api/v1/health`, create/finalize a recording session, upload a small file using the presigned URL, complete it, retrieve a download URL and confirm the downloaded SHA-256 equals the original. Follow `deploy/local/README.md` for the complete PowerShell commands.
-7. Build Android using `.\gradlew.bat :androidApp:assembleDebug`.
+   Flyway applies V4 automatically. The maintenance worker starts only when both PostgreSQL and object storage are configured.
+5. Verify the API health endpoint, create/finalize a recording session, upload a small file through the presigned URL, complete it, retrieve a download URL and compare the downloaded SHA-256. Use deploy/local/README.md for the full round-trip commands.
+6. For a quick cleanup test, restart the API with presign TTL 60 seconds, pending upload TTL 60 seconds, cleanup grace 0 and interval 1 second. Create a second artifact intent against the finalized recording but do not upload it; after 65 seconds, the artifact GET endpoint should return status ABORTED. Restore the normal values from .env after the test.
+7. Build Android using .\gradlew.bat :androidApp:assembleDebug.
 
-Never run `docker compose down -v` during this test. The API and object store remain localhost-only and unauthenticated. The desktop API relay is still synthetic and read-only; it is not a physical robot connection.
- 
+Never run docker compose down -v during this test. The API and object store remain localhost-only and unauthenticated. The desktop API relay is still synthetic and read-only; it is not a physical robot connection.
+
 ## 7. Key files
 
 - `docs/PLATFORM_ARCHITECTURE.md` — target and current architecture.

@@ -53,14 +53,24 @@ $env:NRC_DATABASE_URL = "jdbc:postgresql://localhost:5435/nrc"
 $env:NRC_DATABASE_USER = "nrc"
 $LocalEnv = @{}
 Get-Content .env | ForEach-Object {
-    if ($_ -match '^\s*([^#=]+)=(.*)
-$env:NRC_ARTIFACT_PENDING_UPLOAD_TTL_SECONDS = "86400"
-$env:NRC_ARTIFACT_CLEANUP_GRACE_SECONDS = "3600"
-$env:NRC_ARTIFACT_CLEANUP_INTERVAL_SECONDS = "900"
-$env:NRC_ARTIFACT_CLEANUP_BATCH_SIZE = "100"
+    if ($_ -match '^\s*([^#=]+)=(.*)$') {
+        $LocalEnv[$matches[1].Trim()] = $matches[2].Trim()
+    }
+}
+$env:NRC_DATABASE_PASSWORD = $LocalEnv["NRC_DB_CREDENTIAL"]
+$env:NRC_OBJECT_STORE_ENDPOINT = $LocalEnv["NRC_OBJECT_STORE_ENDPOINT"]
+$env:NRC_OBJECT_STORE_ACCESS_KEY = $LocalEnv["NRC_OBJECT_STORE_ACCESS_KEY"]
+$env:NRC_OBJECT_STORE_SECRET_KEY = $LocalEnv["NRC_OBJECT_STORE_SECRET_KEY"]
+$env:NRC_OBJECT_STORE_BUCKET = $LocalEnv["NRC_OBJECT_STORE_BUCKET"]
+$env:NRC_OBJECT_STORE_REGION = $LocalEnv["NRC_OBJECT_STORE_REGION"]
+$env:NRC_OBJECT_STORE_PATH_STYLE = $LocalEnv["NRC_OBJECT_STORE_PATH_STYLE"]
+$env:NRC_OBJECT_STORE_PRESIGN_TTL_SECONDS = $LocalEnv["NRC_OBJECT_STORE_PRESIGN_TTL_SECONDS"]
+$env:NRC_ARTIFACT_PENDING_UPLOAD_TTL_SECONDS = $LocalEnv["NRC_ARTIFACT_PENDING_UPLOAD_TTL_SECONDS"]
+$env:NRC_ARTIFACT_CLEANUP_GRACE_SECONDS = $LocalEnv["NRC_ARTIFACT_CLEANUP_GRACE_SECONDS"]
+$env:NRC_ARTIFACT_CLEANUP_INTERVAL_SECONDS = $LocalEnv["NRC_ARTIFACT_CLEANUP_INTERVAL_SECONDS"]
+$env:NRC_ARTIFACT_CLEANUP_BATCH_SIZE = $LocalEnv["NRC_ARTIFACT_CLEANUP_BATCH_SIZE"]
 $env:NRC_API_HOST = "127.0.0.1"
 $env:NRC_API_PORT = "8080"
-
 
 .\gradlew.bat :platform-api:run
 ```
@@ -154,7 +164,39 @@ Files up to 64 MiB use a presigned single PUT. Larger files use multipart upload
 
 The API verifies the actual object byte count and SHA-256 by streaming it from object storage. A failed integrity check marks the artifact `FAILED` and attempts to delete the uploaded object. A download URL is issued only for verified artifacts.
 
-## 7. Build the Android app
+## 7. Verify abandoned-upload cleanup (quick local test)
+
+For a quick test only, stop the API and restart it with these temporary PowerShell settings before creating the pending artifact:
+
+```powershell
+$env:NRC_OBJECT_STORE_PRESIGN_TTL_SECONDS = "60"
+$env:NRC_ARTIFACT_PENDING_UPLOAD_TTL_SECONDS = "60"
+$env:NRC_ARTIFACT_CLEANUP_GRACE_SECONDS = "0"
+$env:NRC_ARTIFACT_CLEANUP_INTERVAL_SECONDS = "1"
+```
+
+Use the already-finalized $RecordingId from section 6. Create an upload intent but do not upload the file:
+
+```powershell
+$PendingPath = Join-Path $env:TEMP "nrc-pending-cleanup.txt"
+[System.IO.File]::WriteAllText($PendingPath, "NRC cleanup test")
+$PendingSize = (Get-Item $PendingPath).Length
+$PendingHash = (Get-FileHash -Algorithm SHA256 $PendingPath).Hash.ToLowerInvariant()
+$PendingIntent = Invoke-RestMethod -Method Post -Uri "$BaseUrl/api/v1/recordings/$RecordingId/artifacts" -ContentType "application/json" -Body (@{
+    fileName = "nrc-pending-cleanup.txt"
+    contentType = "text/plain"
+    sizeBytes = $PendingSize
+    sha256Hex = $PendingHash
+} | ConvertTo-Json)
+$PendingArtifactId = $PendingIntent.artifact.id
+Start-Sleep -Seconds 65
+$ExpiredArtifact = Invoke-RestMethod -Uri "$BaseUrl/api/v1/artifacts/$PendingArtifactId"
+$ExpiredArtifact.status
+```
+
+Expected status: ABORTED. The worker should log a cleanup summary. Restart the API with the normal values from .env after this test. Do not use the short test TTL in a shared or production environment.
+
+## 8. Build the Android app
 
 The Android app currently uses standalone simulator mode:
 
@@ -162,15 +204,15 @@ The Android app currently uses standalone simulator mode:
 .\gradlew.bat :androidApp:assembleDebug
 ```
 
-Expected result: `BUILD SUCCESSFUL`. The debug APK is normally generated under `androidApp/build/outputs/apk/debug/`.
+Expected result: BUILD SUCCESSFUL. The debug APK is normally generated under androidApp/build/outputs/apk/debug/.
 
-## 8. Stop local services
+## 9. Stop local services
 
 ```powershell
 docker compose -f deploy/local/compose.yaml down
 ```
 
-This stops services but preserves named volumes. Do not use `down -v` unless you intentionally want to delete the local PostgreSQL database and all RustFS objects.
+This stops services but preserves named volumes. Do not use down -v unless you intentionally want to delete the local PostgreSQL database and all RustFS objects.
 
 ## Current limitations
 
