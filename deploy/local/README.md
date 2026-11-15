@@ -7,7 +7,7 @@ This Compose file starts PostgreSQL and RustFS for the NRC Platform API. Both bi
 From the repository root:
 
 ```powershell
-Copy-Item .env.example .env
+if (!(Test-Path .env)) { Copy-Item .env.example .env }
 ```
 
 Edit `.env` and populate the blank credential fields before starting Compose. If you already have an untracked `.env` from the earlier local setup, rename its PostgreSQL Compose credential key to `NRC_DB_CREDENTIAL` while retaining the existing value; this does not change the PostgreSQL role password.
@@ -194,7 +194,7 @@ $ExpiredArtifact = Invoke-RestMethod -Uri "$BaseUrl/api/v1/artifacts/$PendingArt
 $ExpiredArtifact.status
 ```
 
-Expected status: ABORTED. The worker should log a cleanup summary. Restart the API with the normal values from .env after this test. Do not use the short test TTL in a shared or production environment.
+Expected status: ABORTED. The worker should log a cleanup summary. Restart the API with the normal values from .env after this test. Open a fresh PowerShell terminal and rerun the API environment-loading block from section 3 to restore the configured values. Do not use the short test TTL in a shared or production environment.
 
 ## 8. Build the Android app
 
