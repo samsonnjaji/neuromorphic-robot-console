@@ -1,6 +1,7 @@
 package com.samsonnjaji.nrc.api
 
 import com.samsonnjaji.nrc.api.artifacts.ArtifactRepository
+import com.samsonnjaji.nrc.api.artifacts.ArtifactMaintenanceConfig
 import com.samsonnjaji.nrc.api.artifacts.InMemoryArtifactRepository
 import com.samsonnjaji.nrc.api.artifacts.artifactUploadPlan
 import com.samsonnjaji.nrc.api.artifacts.safeArtifactFileName
@@ -71,6 +72,7 @@ fun Application.module(
     recordingSessionRepository: RecordingSessionRepository = InMemoryRecordingSessionRepository(),
     artifactRepository: ArtifactRepository = InMemoryArtifactRepository(),
     artifactObjectStorage: ArtifactObjectStorage? = null,
+    artifactMaintenanceConfig: ArtifactMaintenanceConfig = ArtifactMaintenanceConfig(),
     telemetryHub: TelemetryHub = TelemetryHub(),
     jsonFormat: Json = NrcJson
 ) {
@@ -345,6 +347,7 @@ fun Application.module(
                     } else {
                         null
                     }
+                    val createdAt = System.currentTimeMillis()
                     val record = ArtifactRecord(
                         id = artifactId,
                         recordingSessionId = recordingId,
@@ -359,7 +362,11 @@ fun Application.module(
                         multipartUploadId = multipartUploadId,
                         partSizeBytes = plan.partSizeBytes,
                         partCount = plan.partCount,
-                        createdAtUnixMs = System.currentTimeMillis()
+                        createdAtUnixMs = createdAt,
+                        uploadUrlExpiresAtUnixMs = maxOf(
+                            createdAt + artifactMaintenanceConfig.pendingUploadTtlMs,
+                            signedUpload?.expiresAtUnixMs ?: createdAt
+                        )
                     )
 
                     try {
@@ -421,9 +428,14 @@ fun Application.module(
                         return@post
                     }
                     val signed = storage.createSingleUpload(record.objectKey, record.contentType, record.sizeBytes)
+                    val updatedRecord = artifactRepository.updateUploadUrlExpiry(record.id, signed.expiresAtUnixMs)
+                    if (updatedRecord == null) {
+                        call.respond(HttpStatusCode.Conflict, ApiError("artifact_upload_not_available", "Artifact is no longer pending upload."))
+                        return@post
+                    }
                     call.respond(
                         ArtifactUploadInitiatedResponse(
-                            artifact = record,
+                            artifact = updatedRecord,
                             uploadUrl = signed.url,
                             requiredHeaders = signed.requiredHeaders,
                             uploadUrlExpiresAtUnixMs = signed.expiresAtUnixMs
@@ -466,6 +478,10 @@ fun Application.module(
                         return@post
                     }
                     val signed = storage.createPartUpload(record.objectKey, uploadId, partNumber)
+                    if (artifactRepository.updateUploadUrlExpiry(record.id, signed.expiresAtUnixMs) == null) {
+                        call.respond(HttpStatusCode.Conflict, ApiError("artifact_upload_not_available", "Artifact is no longer pending upload."))
+                        return@post
+                    }
                     call.respond(
                         ArtifactPartUploadUrlResponse(
                             artifactId = record.id,
@@ -543,7 +559,7 @@ fun Application.module(
                             etag = verification.etag,
                             failureReason = "Uploaded size does not match the declared size."
                         )
-                        bestEffortDelete(storage, record.objectKey)
+                        bestEffortDelete(artifactRepository, storage, record.id, record.objectKey)
                         call.respond(HttpStatusCode.Conflict, ApiError("artifact_size_mismatch", "Uploaded object size does not match the declared size."))
                         return@post
                     }
@@ -554,7 +570,7 @@ fun Application.module(
                             etag = verification.etag,
                             failureReason = "SHA-256 checksum verification failed."
                         )
-                        bestEffortDelete(storage, record.objectKey)
+                        bestEffortDelete(artifactRepository, storage, record.id, record.objectKey)
                         call.respond(HttpStatusCode.Conflict, ApiError("artifact_checksum_mismatch", "Uploaded object SHA-256 does not match the declared checksum."))
                         return@post
                     }
@@ -719,8 +735,18 @@ private fun isUuid(value: String): Boolean = runCatching {
     java.util.UUID.fromString(value)
 }.isSuccess
 
-private suspend fun bestEffortDelete(storage: ArtifactObjectStorage, objectKey: String) {
-    try { storage.deleteObject(objectKey) }
-    catch (cancelled: CancellationException) { throw cancelled }
-    catch (_: Exception) { /* orphan cleanup is handled by storage maintenance */ }
+private suspend fun bestEffortDelete(
+    repository: ArtifactRepository,
+    storage: ArtifactObjectStorage,
+    artifactId: String,
+    objectKey: String
+) {
+    try {
+        storage.deleteObject(objectKey)
+        repository.markCleanupCompleted(artifactId, System.currentTimeMillis())
+    } catch (cancelled: CancellationException) {
+        throw cancelled
+    } catch (_: Exception) {
+        // Failed artifact cleanup is retried by the maintenance worker after upload URLs expire.
+    }
 }

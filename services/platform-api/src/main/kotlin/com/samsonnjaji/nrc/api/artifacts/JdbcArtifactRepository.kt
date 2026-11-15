@@ -29,6 +29,8 @@ class JdbcArtifactRepository(
                 statement.setNullableLong(12, record.partSizeBytes)
                 statement.setNullableInt(13, record.partCount)
                 statement.setLong(14, record.createdAtUnixMs)
+                statement.setLong(15, record.uploadUrlExpiresAtUnixMs)
+                statement.setNullableLong(16, record.cleanupCompletedAtUnixMs)
                 statement.executeUpdate()
             }
         }
@@ -76,7 +78,6 @@ class JdbcArtifactRepository(
                         if (resultSet.next()) resultSet.toArtifactRecord() else null
                     }
                 }
-
                 when {
                     current == null -> {
                         connection.rollback()
@@ -113,6 +114,94 @@ class JdbcArtifactRepository(
         }
     }
 
+    override suspend fun updateUploadUrlExpiry(id: String, expiresAtUnixMs: Long): ArtifactRecord? =
+        withContext(Dispatchers.IO) {
+            dataSource.connection.use { connection ->
+                val changed = connection.prepareStatement(UPDATE_UPLOAD_EXPIRY_SQL).use { statement ->
+                    statement.setLong(1, expiresAtUnixMs)
+                    statement.setObject(2, UUID.fromString(id))
+                    statement.executeUpdate()
+                }
+                if (changed == 0) null else connection.prepareStatement(FIND_SQL).use { statement ->
+                    statement.setObject(1, UUID.fromString(id))
+                    statement.executeQuery().use { resultSet ->
+                        if (resultSet.next()) resultSet.toArtifactRecord() else null
+                    }
+                }
+            }
+        }
+
+    override suspend fun listCleanupCandidates(expiredBeforeUnixMs: Long, limit: Int): List<ArtifactRecord> =
+        withContext(Dispatchers.IO) {
+            dataSource.connection.use { connection ->
+                connection.prepareStatement(LIST_CLEANUP_SQL).use { statement ->
+                    statement.setLong(1, expiredBeforeUnixMs)
+                    statement.setLong(2, expiredBeforeUnixMs)
+                    statement.setInt(3, limit.coerceIn(1, 1_000))
+                    statement.executeQuery().use { resultSet ->
+                        buildList {
+                            while (resultSet.next()) add(resultSet.toArtifactRecord())
+                        }
+                    }
+                }
+            }
+        }
+
+    override suspend fun abortIfExpired(
+        id: String,
+        expiredBeforeUnixMs: Long
+    ): RepositoryUpdate<ArtifactRecord> = withContext(Dispatchers.IO) {
+        dataSource.connection.use { connection ->
+            connection.autoCommit = false
+            try {
+                val current = connection.prepareStatement(FIND_FOR_UPDATE_SQL).use { statement ->
+                    statement.setObject(1, UUID.fromString(id))
+                    statement.executeQuery().use { resultSet ->
+                        if (resultSet.next()) resultSet.toArtifactRecord() else null
+                    }
+                }
+                when {
+                    current == null -> {
+                        connection.rollback()
+                        RepositoryUpdate.NotFound
+                    }
+                    current.status != "PENDING_UPLOAD" ||
+                        current.uploadUrlExpiresAtUnixMs > expiredBeforeUnixMs -> {
+                        connection.rollback()
+                        RepositoryUpdate.InvalidTransition
+                    }
+                    else -> {
+                        val updated = current.copy(
+                            status = "ABORTED",
+                            failureReason = "Upload expired before verification."
+                        )
+                        connection.prepareStatement(ABORT_EXPIRED_SQL).use { statement ->
+                            statement.setString(1, updated.failureReason)
+                            statement.setObject(2, UUID.fromString(updated.id))
+                            statement.executeUpdate()
+                        }
+                        connection.commit()
+                        RepositoryUpdate.Updated(updated)
+                    }
+                }
+            } catch (failure: Throwable) {
+                connection.rollback()
+                throw failure
+            }
+        }
+    }
+
+    override suspend fun markCleanupCompleted(id: String, completedAtUnixMs: Long): Boolean =
+        withContext(Dispatchers.IO) {
+            dataSource.connection.use { connection ->
+                connection.prepareStatement(MARK_CLEANUP_COMPLETED_SQL).use { statement ->
+                    statement.setLong(1, completedAtUnixMs)
+                    statement.setObject(2, UUID.fromString(id))
+                    statement.executeUpdate() == 1
+                }
+            }
+        }
+
     private fun ResultSet.toArtifactRecord() = ArtifactRecord(
         id = getString("id"),
         recordingSessionId = getString("recording_session_id"),
@@ -130,7 +219,9 @@ class JdbcArtifactRepository(
         etag = getString("etag"),
         failureReason = getString("failure_reason"),
         createdAtUnixMs = getLong("created_at_unix_ms"),
-        verifiedAtUnixMs = getNullableLong("verified_at_unix_ms")
+        verifiedAtUnixMs = getNullableLong("verified_at_unix_ms"),
+        uploadUrlExpiresAtUnixMs = getLong("upload_url_expires_at_unix_ms"),
+        cleanupCompletedAtUnixMs = getNullableLong("cleanup_completed_at_unix_ms")
     )
 
     private fun ResultSet.getNullableLong(column: String): Long? =
@@ -152,41 +243,49 @@ class JdbcArtifactRepository(
             INSERT INTO nrc_artifacts (
                 id, recording_session_id, status, upload_mode, file_name, content_type,
                 size_bytes, sha256_hex, bucket, object_key, multipart_upload_id,
-                part_size_bytes, part_count, created_at_unix_ms
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                part_size_bytes, part_count, created_at_unix_ms,
+                upload_url_expires_at_unix_ms, cleanup_completed_at_unix_ms
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """
-
-        const val FIND_SQL = """
-            SELECT id, recording_session_id, status, upload_mode, file_name, content_type,
-                   size_bytes, sha256_hex, bucket, object_key, multipart_upload_id,
-                   part_size_bytes, part_count, etag, failure_reason,
-                   created_at_unix_ms, verified_at_unix_ms
-            FROM nrc_artifacts WHERE id = ?
+        const val FIND_COLUMNS = """
+            id, recording_session_id, status, upload_mode, file_name, content_type,
+            size_bytes, sha256_hex, bucket, object_key, multipart_upload_id,
+            part_size_bytes, part_count, etag, failure_reason,
+            created_at_unix_ms, verified_at_unix_ms,
+            upload_url_expires_at_unix_ms, cleanup_completed_at_unix_ms
         """
-
-        const val FIND_FOR_UPDATE_SQL = """
-            SELECT id, recording_session_id, status, upload_mode, file_name, content_type,
-                   size_bytes, sha256_hex, bucket, object_key, multipart_upload_id,
-                   part_size_bytes, part_count, etag, failure_reason,
-                   created_at_unix_ms, verified_at_unix_ms
-            FROM nrc_artifacts WHERE id = ? FOR UPDATE
-        """
-
+        const val FIND_SQL = "SELECT $FIND_COLUMNS FROM nrc_artifacts WHERE id = ?"
+        const val FIND_FOR_UPDATE_SQL = "SELECT $FIND_COLUMNS FROM nrc_artifacts WHERE id = ? FOR UPDATE"
         const val LIST_SQL = """
-            SELECT id, recording_session_id, status, upload_mode, file_name, content_type,
-                   size_bytes, sha256_hex, bucket, object_key, multipart_upload_id,
-                   part_size_bytes, part_count, etag, failure_reason,
-                   created_at_unix_ms, verified_at_unix_ms
-            FROM nrc_artifacts
+            SELECT $FIND_COLUMNS FROM nrc_artifacts
             WHERE recording_session_id = ?
             ORDER BY created_at_unix_ms DESC, id DESC
             LIMIT 500
         """
-
+        const val LIST_CLEANUP_SQL = """
+            SELECT $FIND_COLUMNS FROM nrc_artifacts
+            WHERE (status = 'PENDING_UPLOAD' AND upload_url_expires_at_unix_ms <= ?)
+               OR (status = 'FAILED' AND upload_url_expires_at_unix_ms <= ? AND cleanup_completed_at_unix_ms IS NULL)
+               OR (status = 'ABORTED' AND cleanup_completed_at_unix_ms IS NULL)
+            ORDER BY upload_url_expires_at_unix_ms ASC, created_at_unix_ms ASC, id ASC
+            LIMIT ?
+        """
         const val UPDATE_STATUS_SQL = """
             UPDATE nrc_artifacts
             SET status = ?, etag = ?, failure_reason = ?, verified_at_unix_ms = ?
             WHERE id = ?
+        """
+        const val UPDATE_UPLOAD_EXPIRY_SQL = """
+            UPDATE nrc_artifacts
+            SET upload_url_expires_at_unix_ms = GREATEST(upload_url_expires_at_unix_ms, ?)
+            WHERE id = ? AND status = 'PENDING_UPLOAD'
+        """
+        const val ABORT_EXPIRED_SQL = """
+            UPDATE nrc_artifacts SET status = 'ABORTED', failure_reason = ? WHERE id = ?
+        """
+        const val MARK_CLEANUP_COMPLETED_SQL = """
+            UPDATE nrc_artifacts SET cleanup_completed_at_unix_ms = ?
+            WHERE id = ? AND status IN ('ABORTED', 'FAILED') AND cleanup_completed_at_unix_ms IS NULL
         """
     }
 }
