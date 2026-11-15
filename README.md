@@ -33,6 +33,7 @@ The target architecture is staged. A planned component is not considered impleme
 - Ktor Platform API MVP: health, experiment/run/recording lifecycle, telemetry ingestion and WebSocket fan-out.
 - PostgreSQL repositories for experiment definitions, experiment runs, recording-session metadata and artifact metadata, using HikariCP and Flyway migrations.
 - S3-compatible artifact storage with RustFS locally, presigned single-part/multipart uploads, and server-side size/SHA-256 verification.
+- Background cleanup for expired pending/failed uploads, including multipart aborts and retryable object deletion.
 - Persistent experiment-run lifecycle with source-revision/configuration provenance and validated state transitions.
 - Recording-session metadata lifecycle for MCAP, ROSBAG2, NRC_JSONL and other recording formats.
 - Local PostgreSQL Docker Compose configuration.
@@ -40,7 +41,7 @@ The target architecture is staged. A planned component is not considered impleme
 - OpenAPI 3.1 route documentation and JSON Schema contract validation in CI.
 - Gradle 9.7.0 wrapper for reproducible local builds.
 
-**Current limitations:** the API has no user/device authentication yet and binds to localhost by default. Artifact upload is available through the API, but is not yet integrated into the desktop/Android user interface or a real ROS 2 edge gateway. Live telemetry fan-out is in memory. The ROS 2 gateway, inference workers and web client remain planned. Desktop API-relay mode is synthetic and read-only; it is not a real robot connection. Current robustness profiles are illustrative synthetic perturbations, not calibrated weather physics, measured model accuracy or safety certification.
+**Current limitations:** the API has no user/device authentication yet and binds to localhost by default. Artifact upload is available through the API, but is not yet integrated into the desktop/Android user interface or a real ROS 2 edge gateway. Background cleanup applies to expired pending/failed uploads; retention policies for verified artifacts are not implemented. Live telemetry fan-out is in memory. The ROS 2 gateway, inference workers and web client remain planned. Desktop API-relay mode is synthetic and read-only; it is not a real robot connection. Current robustness profiles are illustrative synthetic perturbations, not calibrated weather physics, measured model accuracy or safety certification.
 
 ## Architecture and engineering plan
 

@@ -62,7 +62,7 @@ The API stores artifact metadata in PostgreSQL and binary objects in an S3-compa
 5. Only artifacts with matching size and checksum transition to `VERIFIED`. A failed integrity check marks the artifact `FAILED` and attempts to delete the object.
 6. A short-lived download URL is issued only for a verified artifact.
 
-Presigned URLs are bearer credentials. Keep them private and respect their expiry. The default lifetime is 900 seconds and is configurable. The current API supports S3's 5 TiB maximum object size; automatic cleanup of abandoned multipart uploads and retention policies are future work.
+Presigned URLs are bearer credentials. Keep them private and respect their expiry. The default lifetime is 900 seconds and is configurable. The current API supports S3's 5 TiB maximum object size. A background worker tracks upload URL expiry, waits for a default 24-hour inactivity window plus a 1-hour grace period, aborts abandoned multipart uploads, deletes stale/failed objects and retries cleanup after storage errors. The sweep interval defaults to 15 minutes. Configure these values with the `NRC_ARTIFACT_*` environment variables. Verified artifacts are not deleted by this worker; verified-object retention policies are future work.
 
 The API does not proxy the upload body. Clients upload directly to object storage using the presigned URL. The API streams the object back from storage during integrity verification without loading it fully into memory.
 

@@ -59,6 +59,10 @@ $env:NRC_OBJECT_STORE_BUCKET = "nrc-artifacts"
 $env:NRC_OBJECT_STORE_REGION = "us-east-1"
 $env:NRC_OBJECT_STORE_PATH_STYLE = "true"
 $env:NRC_OBJECT_STORE_PRESIGN_TTL_SECONDS = "900"
+$env:NRC_ARTIFACT_PENDING_UPLOAD_TTL_SECONDS = "86400"
+$env:NRC_ARTIFACT_CLEANUP_GRACE_SECONDS = "3600"
+$env:NRC_ARTIFACT_CLEANUP_INTERVAL_SECONDS = "900"
+$env:NRC_ARTIFACT_CLEANUP_BATCH_SIZE = "100"
 $env:NRC_API_HOST = "127.0.0.1"
 $env:NRC_API_PORT = "8080"
 
@@ -68,7 +72,9 @@ $env:NRC_API_PORT = "8080"
 
 For machines using the default PostgreSQL port, change the database URL to `jdbc:postgresql://localhost:5432/nrc`. The API process does not automatically import `.env`; set the environment variables explicitly. Flyway applies versioned migrations at startup. When `NRC_DATABASE_URL` is absent, the API uses in-memory repositories and records are not durable. When `NRC_OBJECT_STORE_ENDPOINT` is absent, artifact upload/download endpoints return HTTP 503.
 
-The API creates the configured bucket at startup if it does not already exist. RustFS is the local development provider; the application uses the provider-neutral AWS SDK for Java v2 S3 API.
+The API creates the configured bucket at startup if it does not already exist. RustFS is the local development provider; the application uses the provider-neutral AWS SDK for Java v2 S3 API. When PostgreSQL and object storage are both configured, the API also starts a background artifact-maintenance worker.
+
+The default cleanup policy gives a pending upload a 24-hour inactivity window, then waits a further 1-hour grace period after the latest tracked presigned upload URL expires. The worker scans every 15 minutes in batches of 100, aborts abandoned multipart sessions, deletes abandoned/failed objects and retries cleanup after storage errors. These values are configurable with the `NRC_ARTIFACT_*` environment variables. Verified artifacts are never removed by this worker; verified-object retention policies are a separate future feature.
 
 ## 4. Verify the API
 
@@ -176,7 +182,7 @@ This stops services but preserves named volumes. Do not use `down -v` unless you
 - This local service is not authenticated; PostgreSQL and RustFS bind to localhost by default.
 - PostgreSQL stores experiment definitions, run/recording metadata and artifact registry records. Raw MCAP/ROS bag/image/video files are stored in S3-compatible object storage.
 - Live telemetry fan-out is in memory and is not durable.
-- Automatic cleanup of abandoned multipart uploads and object retention policies are not implemented yet.
+- Expired pending/failed uploads are automatically aborted/deleted, with retry after storage errors. Retention policies for verified artifacts are not implemented yet.
 - The desktop API-relay mode uses synthetic telemetry to test the API path.
 - Android is not yet connected to the API.
 - Do not expose the API, database or object store to a network until authentication, TLS, access controls and deployment hardening are implemented.

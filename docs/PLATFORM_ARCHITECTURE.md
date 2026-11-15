@@ -1,7 +1,7 @@
 # NRC Platform Architecture
 
 **Status:** Target architecture, accepted and being implemented in validated stages  
-**Current baseline:** Kotlin Multiplatform core, Android/desktop simulator clients, Ktor API MVP, PostgreSQL experiment/run/recording/artifact metadata, S3-compatible artifact upload and validated local desktop relay  
+**Current baseline:** Kotlin Multiplatform core, Android/desktop simulator clients, Ktor API MVP, PostgreSQL experiment/run/recording/artifact metadata, S3-compatible artifact upload with background cleanup, and validated local desktop relay  
 **Architecture principle:** one shared robotics intelligence and experiment model, multiple clients and deployment modes.
 
 ## 1. Product boundary
@@ -100,7 +100,7 @@ The existing `composeApp` remains the Compose presentation/application module an
 
 The clients must not connect directly to databases or inference workers.
 
-**Not implemented yet:** user/device authentication, organisation/tenant isolation, audit events, PostgreSQL-backed telemetry history, automatic cleanup of abandoned multipart uploads, retention policies, rate limits and production deployment hardening. Do not expose this unauthenticated MVP to a public network.
+**Not implemented yet:** user/device authentication, organisation/tenant isolation, audit events, PostgreSQL-backed telemetry history, retention policies for verified artifacts, rate limits and production deployment hardening. Do not expose this unauthenticated MVP to a public network.
 
 ### C. NRC Edge Gateway — robot connectivity
 
@@ -144,7 +144,7 @@ Android and desktop currently share a Kotlin Multiplatform Compose codebase. The
 ## 4. Data and storage architecture
 
 - **PostgreSQL:** currently stores experiment definitions, experiment-run metadata and recording-session metadata. Target scope also includes users, organisations, device registry, manifests, model/dataset metadata, report indexes and audit events.
-- **S3-compatible object storage:** stores uploaded recording and experiment artifacts. RustFS is used locally; AWS S3 and other compatible providers can be configured. Large MCAP/ROS bag recordings, image/video sequences, benchmark artifacts and exported reports belong here, not in PostgreSQL.
+- **S3-compatible object storage:** stores uploaded recording and experiment artifacts. RustFS is used locally; AWS S3 and other compatible providers can be configured. Large MCAP/ROS bag recordings, image/video sequences, benchmark artifacts and exported reports belong here, not in PostgreSQL. A background worker expires abandoned uploads after the configured idle window and grace period, aborts multipart sessions and retries failed object deletion. It does not delete verified artifacts.
 - **Local edge buffer:** planned for temporary recording chunks and queued telemetry when offline.
 - **Client cache:** limited recent state and metadata; never the canonical experiment record.
 
@@ -193,7 +193,7 @@ The current local development setup starts PostgreSQL with Docker Compose. API m
 
 ### Planned API routes
 
-Robot registry, authenticated users/organisations, model registry, dataset registry, upload-retention policies and automated cleanup of abandoned multipart uploads will be added in subsequent milestones.
+Robot registry, authenticated users/organisations, model registry, dataset registry and retention policies for verified artifacts will be added in subsequent milestones.
 
 ### Versioned contracts
 

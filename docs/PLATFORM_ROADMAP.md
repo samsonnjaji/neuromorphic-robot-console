@@ -49,7 +49,8 @@ This roadmap sequences platform work so that every phase produces a usable, test
 - [x] Add artifact registry, S3-compatible object storage and recording upload coordination.
 - [x] Add presigned single-part and multipart uploads with server-side size/SHA-256 verification.
 - [x] Add local RustFS Compose service and CI integration tests.
-- [ ] Add cleanup/retention policy for abandoned multipart uploads and stored artifacts.
+- [x] Add expiry tracking and background cleanup for abandoned pending/failed uploads, including multipart abort and retryable object deletion.
+- [ ] Add retention policies and quota-based lifecycle management for verified artifacts.
 - [ ] Add authentication and device credentials.
 - [ ] Verify Android API integration after desktop behavior is validated.
 
@@ -57,11 +58,13 @@ This roadmap sequences platform work so that every phase produces a usable, test
 
 **Experiment/recording lifecycle verification:** PR #13 was merged into main at `1c6dad8629a9d4df5029e3695c6a7fc9d533306b`; [GitHub Actions Run 25](https://github.com/samsonnjaji/neuromorphic-robot-console/actions/runs/43707369909) and [PR validation Run 26](https://github.com/samsonnjaji/neuromorphic-robot-console/actions/runs/43707445882) passed.
 
-**Artifact storage verification:** implementation commit `5099038d9a5cbb180f2d32681f28571ef9e89a1c`, [GitHub Actions Run 33](https://github.com/samsonnjaji/neuromorphic-robot-console/actions/runs/43710393113), passed OpenAPI/schema validation, Docker Compose validation, Kotlin tests, PostgreSQL artifact persistence, RustFS single/multipart upload and SHA-256 verification, and Android debug build.
+**Artifact storage verification:** PR #14 was squash-merged into `main` at `3300de07779bc8c06329eeae97ee5c5ea8bca3ef`. Its push and pull-request CI passed the complete Kotlin, PostgreSQL, RustFS single/multipart upload, SHA-256 verification and Android build workflow; GitGuardian checks passed.
 
-**Current gate:** artifact storage has passed CI. The next local Cursor smoke test should apply Flyway V3 against the existing PostgreSQL volume, start RustFS without deleting any existing volumes, and verify a single-part upload/download round trip with matching SHA-256. The user's existing PostgreSQL host port is 5435 because native PostgreSQL owns 5432.
+**Artifact cleanup verification:** the current feature branch adds Flyway V4 expiry/cleanup metadata, a periodic worker, URL-expiry tracking, multipart abort, idempotent object deletion and retry of failed cleanup. GitHub Actions Run 59 passed the initial implementation. Run 60 is validating the final failed-object retry enhancement.
 
-**Exit criteria:** local RustFS upload/download and artifact metadata persistence are verified on the user's workstation. Then proceed to abandoned-upload cleanup, authentication/device credentials and real robotics data ingestion.
+**Current gate:** finish Run 60 and PR #15 checks, merge the cleanup feature, then ask the user to pull `main` into Cursor. The combined local smoke test should apply Flyway V4, start PostgreSQL/RustFS, verify a single-PUT upload/download SHA-256 round trip, and confirm the cleanup worker starts without touching verified objects. Preserve the existing PostgreSQL volume and host port 5435.
+
+**Exit criteria:** storage and cleanup pass CI and the local V4 smoke test. Then proceed to the read-only ROS 2/MCAP edge gateway and one real sensor recording; verified-object retention remains a separate future milestone.
 
 ## Phase 3 — Edge and real data
 

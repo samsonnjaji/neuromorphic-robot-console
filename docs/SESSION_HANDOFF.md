@@ -3,17 +3,18 @@
 **Last updated:** 2026-11-15  
 **Repository:** https://github.com/samsonnjaji/neuromorphic-robot-console  
 **Base branch:** `main`  
-**Active development branch:** `feat/s3-artifact-storage`  
-**Artifact implementation commit:** `5099038d9a5cbb180f2d32681f28571ef9e89a1c`  
-**Feature PR:** [PR #14 — S3-compatible artifact storage and recording uploads](https://github.com/samsonnjaji/neuromorphic-robot-console/pull/14)  
-**Push CI:** [Run 33 — success](https://github.com/samsonnjaji/neuromorphic-robot-console/actions/runs/43710393113).  
-**PR status:** Open; pull-request CI must be checked before merge.
+**Active development branch:** `feat/artifact-retention-cleanup`  
+**Artifact storage merge commit:** `3300de07779bc8c06329eeae97ee5c5ea8bca3ef`  
+**Merged feature PR:** [PR #14 — S3-compatible artifact storage and recording uploads](https://github.com/samsonnjaji/neuromorphic-robot-console/pull/14)  
+**Active cleanup branch commit:** `9c8b06341b5a31e90017b4c57e94f3447cb0399f`  
+**Cleanup push CI:** [Run 60](https://github.com/samsonnjaji/neuromorphic-robot-console/actions/runs/43713194842) — in progress at the last check.  
+**Cleanup PR:** to be opened after CI and documentation validation.
 
 ## 1. Instruction for the next ChatGPT session
 
 Continue in the existing repository. Do not restart architecture planning or ask the user to repeat decisions. First inspect the current `main` branch, active PR and latest GitHub Actions run; the remote repository is the source of truth.
 
-The user wants to be told explicitly when to pull the code onto their Windows PC and open it in Cursor. The earlier local gate is complete: Windows 11/JDK 17, Gradle 9.7, Android SDK, Docker engine through Ubuntu WSL, PostgreSQL exposed on host port 5435, API health/experiment CRUD, persistence across API restart, desktop REST/WebSocket relay and Android debug build. The new artifact-storage code has passed push CI Run 33, but **the new artifact workflow has not yet been smoke-tested on the user's PC**. PR #14 is open. Do not tell the user to pull yet; first confirm PR CI is green and merge PR #14. Then ask the user to pull the updated `main` branch and run the RustFS + PostgreSQL V3 artifact upload/download smoke test.
+The user wants to be told explicitly when to pull the code onto their Windows PC and open it in Cursor. The earlier local gate is complete: Windows 11/JDK 17, Gradle 9.7, Android SDK, Docker engine through Ubuntu WSL, PostgreSQL exposed on host port 5435, API health/experiment CRUD, persistence across API restart, desktop REST/WebSocket relay and Android debug build. Artifact storage PR #14 is merged. The current branch adds abandoned-upload cleanup and Flyway V4; **the cleanup feature has not yet been merged or smoke-tested on the user's PC**. Do not ask the user to pull until Run 60 and PR #15 checks pass and the feature is merged. Then ask the user to pull the updated `main` branch and run the combined PostgreSQL V4/RustFS upload, download and cleanup smoke test.
 
 Keep this handoff and roadmap current after substantial milestones. Record commit SHAs, PR links, CI runs, implemented work, limitations and the next exact task. Never claim a test passed without checking its run.
 
@@ -56,7 +57,7 @@ No remote robot actuation in the initial release. Any later control plane needs 
 - Typed validation, stream sequence guard and structured errors.
 - In-memory repository for tests/no-database local development.
 - PostgreSQL JDBC repositories using HikariCP for experiment definitions, experiment runs, recording-session metadata and artifact metadata.
-- Flyway V1/V2/V3 migrations for experiment definitions, runs, recording sessions and artifact registry.
+- Flyway V1/V2/V3/V4 migrations for experiment definitions, runs, recording sessions, artifact registry and upload-cleanup tracking.
 - Validated run lifecycle: CREATED -> RUNNING -> COMPLETED/FAILED/CANCELLED, with CREATED -> CANCELLED.
 - Validated recording lifecycle: CREATED -> RECORDING -> FINALIZED/FAILED/CANCELLED, with CREATED -> CANCELLED.
 - Run configuration/source revision provenance, result summary and failure reason.
@@ -64,6 +65,8 @@ No remote robot actuation in the initial release. Any later control plane needs 
 - PostgreSQL artifact registry with upload status, file metadata, object key, ETag and expected SHA-256.
 - S3-compatible single-part and multipart presigned upload coordination, streaming byte-size/SHA-256 verification and verified-only download URLs.
 - RustFS local Compose service with persistent volumes and a non-root volume-permission helper; provider-neutral AWS SDK for Java v2.
+- Background artifact-maintenance worker tracks presigned URL expiry, marks abandoned pending uploads `ABORTED`, aborts multipart sessions, deletes stale objects and retries failed cleanup.
+- Failed integrity-check objects are eligible for retryable cleanup after their tracked upload URL expiry and grace period.
 - Artifact upload API is implemented on PR #14; push CI Run 33 passed. PR CI must pass before merge. Desktop/Android upload UI and real ROS 2 ingestion are not implemented.
 - Docker Compose PostgreSQL service in `deploy/local/compose.yaml`.
 - PowerShell local startup and smoke-test guide in `deploy/local/README.md`.
@@ -104,7 +107,8 @@ No remote robot actuation in the initial release. Any later control plane needs 
 - API is a local MVP and binds to `127.0.0.1` by default.
 - PostgreSQL stores experiment definitions, run/recording metadata and artifact registry records. Raw recording binaries are stored in configured S3-compatible object storage, not PostgreSQL.
 - Telemetry WebSocket fan-out is in memory, not durable.
-- Automatic cleanup of abandoned multipart uploads and object retention policies are not implemented yet.
+- Background cleanup of expired pending/failed uploads is implemented on the active branch; retention policies for verified artifacts are not implemented yet.
+- The cleanup worker is a single API-process service. Object deletion is idempotent and retryable; multi-tenant quotas and verified-object lifecycle policies remain future work.
 - Desktop API relay mode uses synthetic telemetry; no real robot is connected.
 - Android API integration is not implemented; Android currently uses simulator mode.
 - No web client, ROS 2 gateway or Python inference runtime yet.
@@ -113,17 +117,17 @@ No remote robot actuation in the initial release. Any later control plane needs 
 
 ## 5. Immediate next tasks
 
-1. Check PR #14 and its pull-request CI; merge only after the required checks pass.
-2. Tell the user to pull the merged `main` branch into Cursor. Preserve the existing local PostgreSQL volume and data.
-3. Run the Windows local smoke test for Flyway V3, RustFS, single-PUT upload, server-side SHA-256 verification and verified download. The existing local PostgreSQL host port was 5435; retain it if 5432 remains occupied.
-4. Fix any local issues and update the handoff with the verified result.
-5. Implement the read-only ROS 2/MCAP edge gateway and connect a real recording; keep inference workers, scientific model comparison and authentication sequenced behind this validated ingestion path.
+1. Finish Run 60, open PR #15 for `feat/artifact-retention-cleanup`, and merge only after push, PR and security checks pass.
+2. Tell the user to pull the merged `main` branch into Cursor. Preserve the existing local PostgreSQL volume and data; retain host port 5435 if native PostgreSQL still owns 5432.
+3. Run the combined Windows smoke test for Flyway V4, RustFS single-PUT upload, server-side SHA-256 verification, verified download and background cleanup startup.
+4. Fix local issues and update the handoff with the verified result.
+5. Implement the read-only ROS 2/MCAP edge gateway and connect a real sensor recording; keep inference workers and scientific model comparison sequenced behind validated ingestion.
 
 ## 6. Local testing instructions
 
 The user's Windows checkout is `C:\Users\njaji\Projects\neuromorphic-robot-console`. Docker is available through Ubuntu WSL; Windows PowerShell does not expose `docker.exe`. Native PostgreSQL owns host port 5432, so the NRC container is exposed on host port 5435. The existing NRC PostgreSQL container, API and desktop app were still running at the last report.
 
-After PR #14 is merged:
+After PR #15 is merged (PR #14 artifact storage is already in `main`):
 
 1. In PowerShell at the repository root:
    ```powershell
@@ -153,6 +157,10 @@ After PR #14 is merged:
    $env:NRC_OBJECT_STORE_REGION = "us-east-1"
    $env:NRC_OBJECT_STORE_PATH_STYLE = "true"
    $env:NRC_OBJECT_STORE_PRESIGN_TTL_SECONDS = "900"
+$env:NRC_ARTIFACT_PENDING_UPLOAD_TTL_SECONDS = "86400"
+$env:NRC_ARTIFACT_CLEANUP_GRACE_SECONDS = "3600"
+$env:NRC_ARTIFACT_CLEANUP_INTERVAL_SECONDS = "900"
+$env:NRC_ARTIFACT_CLEANUP_BATCH_SIZE = "100"
    .\gradlew.bat :platform-api:run
    ```
 6. Verify `GET /api/v1/health`, create/finalize a recording session, upload a small file using the presigned URL, complete it, retrieve a download URL and confirm the downloaded SHA-256 equals the original. Follow `deploy/local/README.md` for the complete PowerShell commands.
