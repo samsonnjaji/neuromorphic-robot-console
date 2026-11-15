@@ -1,16 +1,18 @@
 # NRC Architecture
 
-## High-level design
+This document describes the current Kotlin application implementation. The target multi-client platform architecture is documented separately in [PLATFORM_ARCHITECTURE.md](PLATFORM_ARCHITECTURE.md).
+
+## Current application
 
 ```text
                     +-----------------------------+
-                    |     Android App / Desktop   |
+                    |       Android / Desktop     |
                     |      Compose Multiplatform  |
                     +--------------+--------------+
                                    |
                     +--------------v--------------+
-                    |     Shared NRC Application  |
-                    | UI + Domain + StateFlow     |
+                    |       composeApp             |
+                    | UI + Domain + StateFlow      |
                     +---+----------+-------------+
                         |          |
              +----------v---+   +--v------------------+
@@ -23,13 +25,6 @@
              | Environment Robustness Lab            |
              | Scenario profiles + deterministic     |
              | sensor perturbation + result report   |
-             +----------+----------------------------+
-                        |
-             Future transport / dataset adapters
-                        |
-             +----------v----------------------------+
-             | ROS 2 / MCAP / ROS bag / Simulators    |
-             | Event camera, LiDAR, IMU, RGB, SNN     |
              +----------------------------------------+
 ```
 
@@ -52,7 +47,7 @@ The `RobustnessLabEngine` applies a selected `EnvironmentScenario` to a snapshot
 
 The current stress coefficients are illustrative. They are not calibrated atmospheric or sensor-physics models, and their confidence values are not ground-truth accuracy metrics.
 
-## Telemetry contract
+## Current telemetry contract
 
 The initial `RobotTelemetry` model contains:
 
@@ -67,17 +62,17 @@ The initial `RobotTelemetry` model contains:
 - SNN layer activity, active-neuron count, firing rate and mean membrane potential.
 - Target speed and emergency-stop state.
 
-## Planned data and transport adapters
+The versioned wire contract is defined in [schemas/telemetry-envelope.v1.schema.json](../schemas/telemetry-envelope.v1.schema.json).
 
-NRC will not embed ROS 2 middleware directly in the shared Kotlin module. A separate gateway will subscribe to selected ROS 2 topics and publish a versioned JSON or binary telemetry stream over WebSocket. Dataset adapters will ingest recorded MCAP/ROS bag files and preserve source timestamps and provenance.
+## Current code layout
 
-Candidate ROS 2 topics include `/scan`, `/imu/data`, `/odom`, and custom event-camera/perception topics. Topic names will be configurable rather than hard-coded.
-
-The initial gateway is read-only. `/cmd_vel` integration remains disabled until the command-security design, robot-side limits, watchdog and physical emergency-stop requirements are reviewed and tested.
-
-## Platform architecture
-
-- `composeApp`: shared KMP library plus the JVM desktop entry point.
+- `composeApp`: shared KMP library, common UI and current domain/application logic, plus the JVM desktop entry point.
 - `androidApp`: Android-specific application shell that consumes the shared module.
 - `commonMain`: domain models, simulator, safety logic, mission recording, robustness evaluator and Compose UI.
 - `commonTest`: platform-independent tests for safety, mission recording, telemetry validation and robustness evaluation.
+
+## Planned platform boundaries
+
+NRC will evolve toward a separately testable KMP core, a Kotlin/Ktor platform API, a read-only ROS 2 edge gateway, Python inference workers and Android/desktop/web clients. These components are not present yet. See [PLATFORM_ARCHITECTURE.md](PLATFORM_ARCHITECTURE.md) and [PLATFORM_ROADMAP.md](PLATFORM_ROADMAP.md).
+
+The first edge gateway is read-only. Any future motion-command channel requires a separate safety architecture and independent validation.

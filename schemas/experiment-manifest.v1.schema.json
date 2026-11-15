@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nrc.example/schemas/experiment-manifest.v1.schema.json",
+  "title": "NRC Experiment Manifest v1",
+  "description": "Version 1 manifest for an evaluation run. It records configuration and provenance; it is not itself proof that referenced data artifacts are retained.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "manifestVersion",
+    "experimentId",
+    "sourceType",
+    "sourceId",
+    "sourceSequence",
+    "sourceTimestampMs",
+    "modelIdentifier",
+    "modelVersion",
+    "scenario",
+    "lidarRetention",
+    "eventRetention",
+    "addedEventNoiseFraction",
+    "detectionConfidenceScale",
+    "inferenceLatencyScale",
+    "lidarNoiseMeters"
+  ],
+  "properties": {
+    "manifestVersion": {
+      "const": 1
+    },
+    "experimentId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sourceType": {
+      "enum": [
+        "SIMULATOR",
+        "ROS2_LIVE",
+        "MCAP_RECORDING",
+        "ROS_BAG_RECORDING",
+        "CARLA_SIMULATION",
+        "ISAAC_SIMULATION"
+      ]
+    },
+    "sourceId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sourceSequence": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "sourceTimestampMs": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "modelIdentifier": {
+      "type": "string",
+      "minLength": 1
+    },
+    "modelVersion": {
+      "type": "string",
+      "minLength": 1
+    },
+    "scenario": {
+      "enum": [
+        "CLEAR",
+        "HEAVY_RAIN",
+        "FOG",
+        "LOW_LIGHT",
+        "DUST_SMOKE"
+      ]
+    },
+    "lidarRetention": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "eventRetention": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "addedEventNoiseFraction": {
+      "type": "number",
+      "minimum": 0
+    },
+    "detectionConfidenceScale": {
+      "type": "number",
+      "minimum": 0
+    },
+    "inferenceLatencyScale": {
+      "type": "number",
+      "minimum": 0
+    },
+    "lidarNoiseMeters": {
+      "type": "number",
+      "minimum": 0
+    }
+  }
+}

@@ -1,0 +1,254 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nrc.example/schemas/telemetry-envelope.v1.schema.json",
+  "title": "NRC Telemetry Envelope v1",
+  "description": "Version 1 telemetry snapshot envelope. Replace the example schema host with the production NRC domain before publishing externally.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "messageType",
+    "robotId",
+    "sequence",
+    "timestampUnixMs",
+    "payload"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "messageType": {
+      "const": "telemetry.snapshot"
+    },
+    "robotId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sequence": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "timestampUnixMs": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Unix epoch timestamp in milliseconds."
+    },
+    "payload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sequence",
+        "timestampMs",
+        "connected",
+        "batteryPercent",
+        "linearVelocityMps",
+        "angularVelocityRadS",
+        "xMeters",
+        "yMeters",
+        "headingRadians",
+        "cpuLoadPercent",
+        "inferenceLatencyMs",
+        "eventRateHz",
+        "targetSpeedMps",
+        "emergencyStop",
+        "missionRunning",
+        "detections",
+        "snnLayers",
+        "lidar",
+        "events",
+        "imu"
+      ],
+      "properties": {
+        "sequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "timestampMs": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Source timestamp in milliseconds; source clock must be documented."
+        },
+        "connected": {
+          "type": "boolean"
+        },
+        "batteryPercent": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "linearVelocityMps": {
+          "type": "number"
+        },
+        "angularVelocityRadS": {
+          "type": "number"
+        },
+        "xMeters": {
+          "type": "number"
+        },
+        "yMeters": {
+          "type": "number"
+        },
+        "headingRadians": {
+          "type": "number"
+        },
+        "cpuLoadPercent": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "inferenceLatencyMs": {
+          "type": "number",
+          "minimum": 0
+        },
+        "eventRateHz": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "targetSpeedMps": {
+          "type": "number",
+          "minimum": 0
+        },
+        "emergencyStop": {
+          "type": "boolean"
+        },
+        "missionRunning": {
+          "type": "boolean"
+        },
+        "detections": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "label",
+              "confidence",
+              "bearingDegrees"
+            ],
+            "properties": {
+              "label": {
+                "type": "string"
+              },
+              "confidence": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "bearingDegrees": {
+                "type": "number"
+              }
+            }
+          }
+        },
+        "snnLayers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "layerName",
+              "activeNeurons",
+              "neuronCount",
+              "spikesPerSecond",
+              "meanMembranePotentialMv"
+            ],
+            "properties": {
+              "layerName": {
+                "type": "string"
+              },
+              "activeNeurons": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "neuronCount": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "spikesPerSecond": {
+                "type": "number",
+                "minimum": 0
+              },
+              "meanMembranePotentialMv": {
+                "type": "number"
+              }
+            }
+          }
+        },
+        "lidar": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "angleRadians",
+              "distanceMeters"
+            ],
+            "properties": {
+              "angleRadians": {
+                "type": "number"
+              },
+              "distanceMeters": {
+                "type": "number",
+                "minimum": 0
+              }
+            }
+          }
+        },
+        "events": {
+          "type": "array",
+          "description": "Bounded event samples for live visualisation; bulk event recordings must use recording upload.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "x",
+              "y",
+              "polarity"
+            ],
+            "properties": {
+              "x": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "y": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "polarity": {
+                "enum": [
+                  -1,
+                  1
+                ]
+              }
+            }
+          }
+        },
+        "imu": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "accelerationX",
+            "accelerationY",
+            "accelerationZ",
+            "angularVelocityZ"
+          ],
+          "properties": {
+            "accelerationX": {
+              "type": "number"
+            },
+            "accelerationY": {
+              "type": "number"
+            },
+            "accelerationZ": {
+              "type": "number"
+            },
+            "angularVelocityZ": {
+              "type": "number"
+            }
+          }
+        }
+      }
+    }
+  }
+}
