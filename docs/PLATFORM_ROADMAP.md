@@ -43,8 +43,10 @@ This roadmap sequences platform work so that every phase produces a usable, test
 - [x] Add a desktop API-relay source that sends synthetic telemetry through REST and receives it over WebSocket.
 - [x] Add the Gradle 9.7.0 wrapper and verify its JAR checksum.
 - [x] Add PowerShell startup instructions and validate Docker Compose configuration in CI.
-- [ ] Complete desktop API-relay and Android build smoke tests on the user's Windows PC in Cursor.
-- [ ] Add object storage and recording upload coordination.
+- [x] Complete desktop API-relay and Android build smoke tests on the user's Windows PC in Cursor (verified 2026-11-15; Docker engine accessed through Ubuntu WSL and PostgreSQL exposed on host port 5435).
+- [x] Add persistent experiment-run lifecycle and validated state transitions (PR #13; GitHub Actions Run 26 passed).
+- [x] Add recording-session metadata lifecycle and PostgreSQL persistence (PR #13; GitHub Actions Run 26 passed).
+- [ ] Add artifact registry, S3-compatible object storage and recording upload coordination.
 - [ ] Add authentication and device credentials.
 - [ ] Verify Android API integration after desktop behavior is validated.
 
@@ -52,9 +54,9 @@ This roadmap sequences platform work so that every phase produces a usable, test
 
 **Latest repository verification:** documentation/handoff commit `a4f2b30aceac95871d601f901c5034eb3874df2c`, [GitHub Actions Run 21](https://github.com/samsonnjaji/neuromorphic-robot-console/actions/runs/43696578541), also passed.
 
-**Current gate:** ready for the first local Cursor smoke test. The user has not yet pulled the repository.
+**Current gate:** CI is green for the experiment-run and recording-session lifecycle. The next local Cursor smoke test should verify Flyway V2 against the user's existing PostgreSQL instance and exercise the new run/recording endpoints. Request this pull now, before beginning MinIO integration.
 
-**Exit criteria:** desktop client is confirmed locally to connect to the API, receive synthetic telemetry through WebSocket and read persisted experiment records.
+**Exit criteria:** initial local platform baseline and CI verification of persistent experiment runs/recording-session metadata are complete. Binary artifact storage and upload remain the next implementation milestone.
 
 ## Phase 3 — Edge and real data
 

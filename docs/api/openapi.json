@@ -3,7 +3,7 @@
   "info": {
     "title": "NRC Platform API",
     "version": "1.0.0",
-    "description": "Versioned API for experiment metadata and read-only telemetry ingestion/streaming. The current MVP is local-only and unauthenticated; do not expose it publicly."
+    "description": "Versioned API for experiment definitions, experiment runs, recording-session metadata and read-only telemetry ingestion/streaming. The current MVP is local-only and unauthenticated; do not expose it publicly."
   },
   "servers": [
     {
@@ -163,6 +163,420 @@
           },
           "400": {
             "description": "Telemetry rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/experiments/{experimentId}/runs": {
+      "get": {
+        "operationId": "listExperimentRuns",
+        "summary": "List runs for an experiment",
+        "parameters": [
+          {
+            "name": "experimentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Experiment runs, newest first",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ExperimentRunRecord"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Experiment not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createExperimentRun",
+        "summary": "Create an experiment run",
+        "parameters": [
+          {
+            "name": "experimentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateExperimentRunRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Experiment run created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExperimentRunRecord"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid run request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Experiment not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/runs/{runId}": {
+      "get": {
+        "operationId": "getExperimentRun",
+        "summary": "Get an experiment run",
+        "parameters": [
+          {
+            "name": "runId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Experiment run found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExperimentRunRecord"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Experiment run not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/runs/{runId}/transition": {
+      "post": {
+        "operationId": "transitionExperimentRun",
+        "summary": "Advance an experiment run lifecycle state",
+        "parameters": [
+          {
+            "name": "runId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TransitionExperimentRunRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Experiment run updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExperimentRunRecord"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid transition request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Experiment run not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Lifecycle transition is not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/runs/{runId}/recordings": {
+      "get": {
+        "operationId": "listRecordingSessions",
+        "summary": "List recording sessions for a run",
+        "parameters": [
+          {
+            "name": "runId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Recording sessions, newest first",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RecordingSessionRecord"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Experiment run not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createRecordingSession",
+        "summary": "Create a recording session",
+        "parameters": [
+          {
+            "name": "runId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRecordingSessionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Recording session created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecordingSessionRecord"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid recording session request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Experiment run not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/recordings/{recordingId}": {
+      "get": {
+        "operationId": "getRecordingSession",
+        "summary": "Get a recording session",
+        "parameters": [
+          {
+            "name": "recordingId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Recording session found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecordingSessionRecord"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Recording session not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/recordings/{recordingId}/transition": {
+      "post": {
+        "operationId": "transitionRecordingSession",
+        "summary": "Advance a recording session lifecycle state",
+        "parameters": [
+          {
+            "name": "recordingId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TransitionRecordingSessionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Recording session updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecordingSessionRecord"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid transition request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Recording session not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Lifecycle transition is not allowed",
             "content": {
               "application/json": {
                 "schema": {
@@ -353,6 +767,270 @@
           "sequence": {
             "type": "integer",
             "minimum": 0
+          }
+        }
+      },
+      "CreateExperimentRunRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "sourceRevision": {
+            "type": "string",
+            "maxLength": 128,
+            "default": ""
+          },
+          "configuration": {
+            "type": "object",
+            "additionalProperties": true,
+            "default": {}
+          }
+        }
+      },
+      "ExperimentRunRecord": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "experimentId",
+          "status",
+          "sourceRevision",
+          "configuration",
+          "failureReason",
+          "createdAtUnixMs",
+          "updatedAtUnixMs"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "experimentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "CREATED",
+              "RUNNING",
+              "COMPLETED",
+              "FAILED",
+              "CANCELLED"
+            ]
+          },
+          "sourceRevision": {
+            "type": "string"
+          },
+          "configuration": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "resultSummary": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": true
+          },
+          "failureReason": {
+            "type": "string"
+          },
+          "createdAtUnixMs": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "startedAtUnixMs": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "finishedAtUnixMs": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "updatedAtUnixMs": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "TransitionExperimentRunRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "RUNNING",
+              "COMPLETED",
+              "FAILED",
+              "CANCELLED"
+            ]
+          },
+          "resultSummary": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": true
+          },
+          "failureReason": {
+            "type": "string",
+            "default": ""
+          }
+        }
+      },
+      "CreateRecordingSessionRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "format",
+          "sourceId"
+        ],
+        "properties": {
+          "format": {
+            "type": "string",
+            "enum": [
+              "MCAP",
+              "ROSBAG2",
+              "NRC_JSONL",
+              "OTHER"
+            ]
+          },
+          "sourceId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": true,
+            "default": {}
+          }
+        }
+      },
+      "RecordingSessionRecord": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "experimentRunId",
+          "status",
+          "format",
+          "sourceId",
+          "sampleCount",
+          "metadata",
+          "failureReason",
+          "createdAtUnixMs",
+          "updatedAtUnixMs"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "experimentRunId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "CREATED",
+              "RECORDING",
+              "FINALIZED",
+              "FAILED",
+              "CANCELLED"
+            ]
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "MCAP",
+              "ROSBAG2",
+              "NRC_JSONL",
+              "OTHER"
+            ]
+          },
+          "sourceId": {
+            "type": "string"
+          },
+          "sampleCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "failureReason": {
+            "type": "string"
+          },
+          "createdAtUnixMs": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "startedAtUnixMs": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "finishedAtUnixMs": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "updatedAtUnixMs": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "TransitionRecordingSessionRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "RECORDING",
+              "FINALIZED",
+              "FAILED",
+              "CANCELLED"
+            ]
+          },
+          "sampleCount": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "metadata": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": true
+          },
+          "failureReason": {
+            "type": "string",
+            "default": ""
           }
         }
       }

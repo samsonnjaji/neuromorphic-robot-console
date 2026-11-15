@@ -8,7 +8,7 @@ services:
       POSTGRES_USER: nrc
       POSTGRES_PASSWORD: ${NRC_DB_PASSWORD:-nrc_local_dev_only}
     ports:
-      - "127.0.0.1:5432:5432"
+      - "127.0.0.1:${NRC_POSTGRES_HOST_PORT:-5432}:5432"
     volumes:
       - nrc-postgres-data:/var/lib/postgresql/data
     healthcheck:

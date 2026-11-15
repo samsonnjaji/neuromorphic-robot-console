@@ -2,8 +2,14 @@ package com.samsonnjaji.nrc.api
 
 import com.samsonnjaji.nrc.api.database.createNrcDataSource
 import com.samsonnjaji.nrc.api.experiments.ExperimentRepository
+import com.samsonnjaji.nrc.api.experiments.ExperimentRunRepository
 import com.samsonnjaji.nrc.api.experiments.InMemoryExperimentRepository
+import com.samsonnjaji.nrc.api.experiments.InMemoryExperimentRunRepository
+import com.samsonnjaji.nrc.api.experiments.InMemoryRecordingSessionRepository
 import com.samsonnjaji.nrc.api.experiments.JdbcExperimentRepository
+import com.samsonnjaji.nrc.api.experiments.JdbcExperimentRunRepository
+import com.samsonnjaji.nrc.api.experiments.JdbcRecordingSessionRepository
+import com.samsonnjaji.nrc.api.experiments.RecordingSessionRepository
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import org.flywaydb.core.Flyway
@@ -35,6 +41,18 @@ fun main() {
         InMemoryExperimentRepository()
     }
 
+    val experimentRunRepository: ExperimentRunRepository = if (dataSource != null) {
+        JdbcExperimentRunRepository(dataSource)
+    } else {
+        InMemoryExperimentRunRepository()
+    }
+
+    val recordingSessionRepository: RecordingSessionRepository = if (dataSource != null) {
+        JdbcRecordingSessionRepository(dataSource)
+    } else {
+        InMemoryRecordingSessionRepository()
+    }
+
     val host = System.getenv("NRC_API_HOST") ?: "127.0.0.1"
     val port = System.getenv("NRC_API_PORT")?.toIntOrNull() ?: 8080
 
@@ -46,6 +64,12 @@ fun main() {
         Netty,
         host = host,
         port = port,
-        module = { module(experimentRepository = repository) }
+        module = {
+            module(
+                experimentRepository = repository,
+                experimentRunRepository = experimentRunRepository,
+                recordingSessionRepository = recordingSessionRepository
+            )
+        }
     ).start(wait = true)
 }
