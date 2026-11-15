@@ -41,14 +41,18 @@ This roadmap sequences platform work so that every phase produces a usable, test
 - [x] Add API endpoint tests and PostgreSQL persistence integration test.
 - [x] Add OpenAPI 3.1 route reference and external schema checks.
 - [x] Add a desktop API-relay source that sends synthetic telemetry through REST and receives it over WebSocket.
+- [x] Add the Gradle 9.7.0 wrapper and verify its JAR checksum.
+- [x] Add PowerShell startup instructions and validate Docker Compose configuration in CI.
+- [ ] Complete desktop API-relay and Android build smoke tests on the user's Windows PC in Cursor.
 - [ ] Add object storage and recording upload coordination.
 - [ ] Add authentication and device credentials.
-- [ ] Verify the desktop API-relay mode in Cursor on the user's Windows PC.
 - [ ] Verify Android API integration after desktop behavior is validated.
 
-**Current verification:** PostgreSQL persistence, API tests, core tests, desktop compilation and Android debug build passed CI at commit `c202f4b`. The OpenAPI and desktop API-relay additions are in the next CI run and must be verified before local testing.
+**CI verification:** commit `65fbb6194a9dc03e8bebc09172aabee4dafab142`, [GitHub Actions Run 20](https://github.com/samsonnjaji/neuromorphic-robot-console/actions/runs/43696350093), passed. This includes wrapper checksum, OpenAPI/schema validation, Compose configuration, core/desktop/API tests, PostgreSQL persistence integration and Android debug build.
 
-**Exit criteria:** desktop client can connect to the local API, receive simulator telemetry through the API and read persisted experiment records.
+**Current gate:** ready for the first local Cursor smoke test. The user has not yet pulled the repository.
+
+**Exit criteria:** desktop client is confirmed locally to connect to the API, receive synthetic telemetry through WebSocket and read persisted experiment records.
 
 ## Phase 3 — Edge and real data
 

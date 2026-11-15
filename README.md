@@ -35,6 +35,7 @@ The target architecture is staged. A planned component is not considered impleme
 - Local PostgreSQL Docker Compose configuration.
 - Desktop API-relay mode that publishes synthetic telemetry through the API and reads it back over WebSocket.
 - OpenAPI 3.1 route documentation and JSON Schema contract validation in CI.
+- Gradle 9.7.0 wrapper for reproducible local builds.
 
 **Current limitations:** the API has no user/device authentication yet. It binds to localhost by default. PostgreSQL stores experiment metadata only; live telemetry fan-out is in memory. Object storage, recording upload, ROS 2 gateway, inference workers and web client remain planned. Desktop API-relay mode is synthetic and read-only; it is not a real robot connection. Current robustness profiles are illustrative synthetic perturbations, not calibrated weather physics, measured model accuracy or safety certification.
 

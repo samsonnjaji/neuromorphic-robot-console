@@ -3,15 +3,15 @@
 **Last updated:** 2026-11-15  
 **Repository:** https://github.com/samsonnjaji/neuromorphic-robot-console  
 **Active branch:** `main`  
-**Current HEAD at handoff creation:** `1cc677c16ad698e7a6c87965801772e530c34fde`  
-**Current CI run:** [Run 17 — desktop API relay](https://github.com/samsonnjaji/neuromorphic-robot-console/actions/runs/43695557278)  
-**Previous fully verified commit:** `a3c8aa9a5b935bcdebeda077c641829e1826fd77`, [Run 16 — success](https://github.com/samsonnjaji/neuromorphic-robot-console/actions/runs/43695021846).
+**Current HEAD at handoff creation:** `65fbb6194a9dc03e8bebc09172aabee4dafab142`  
+**Latest CI:** [Run 20 — success](https://github.com/samsonnjaji/neuromorphic-robot-console/actions/runs/43696350093)  
+**Previous CI:** [Run 19 — success](https://github.com/samsonnjaji/neuromorphic-robot-console/actions/runs/43696269327).
 
 ## 1. Instruction for the next ChatGPT session
 
 Continue work in the existing GitHub repository. Do not restart the architecture exercise and do not ask the user to repeat prior decisions. First read this file, then inspect the current `main` branch and the latest GitHub Actions run. The remote repository is the source of truth.
 
-The user wants to be told explicitly when to pull the code onto their Windows PC and open it in Cursor for application testing. Do not ask for a local pull until the current main commit has green CI, local run instructions are complete, and there is a concrete app/API test task that needs the user's machine. The user has not yet been asked to pull this desktop API-relay increment.
+The user wants to be told explicitly when to pull the code onto their Windows PC and open it in Cursor for application testing. **The local testing gate is now met:** the latest main commit has green CI, the Gradle wrapper is included and verified, Docker Compose configuration passes validation, and local PowerShell instructions are committed. The next action is to tell the user to pull and run the desktop API-relay and Android build smoke tests.
 
 Keep this handoff file current after each substantial milestone. Record commit SHAs, CI run links, implemented work, known issues and the next exact task. Do not claim tests passed without checking the run.
 
@@ -68,11 +68,22 @@ No remote robot actuation in the initial release. Any later control plane needs 
 - Android remains in standalone simulator mode.
 - Local PowerShell instructions are in `deploy/local/README.md`.
 
+### Build and local developer experience
+- Official Gradle 9.7.0 wrapper scripts and wrapper JAR.
+- Gradle distribution SHA-256 pinned in `gradle-wrapper.properties`.
+- Wrapper JAR SHA-256 checked in CI against Gradle's published checksum.
+- `.env` and `.env.*` ignored; `.env.example` retained.
+- Docker Compose configuration validated in CI.
+- Local commands use `.\gradlew.bat` in PowerShell.
+
 ### CI
 - Run 14, commit `511c9b3`, passed schema validation, core tests, desktop compile, API tests and Android build.
 - Run 15, commit `c202f4b`, passed PostgreSQL persistence, core/desktop/API tests and Android build.
 - Run 16, commit `a3c8aa9`, passed the full workflow.
-- Run 17, commit `1cc677c`, desktop API-relay/OpenAPI integration. Core, desktop compilation, API tests, PostgreSQL integration and schema/OpenAPI validation passed; Android build passed and runner cleanup was still in progress when this handoff was written. Check the final run conclusion before proceeding.
+- Run 17, commit `1cc677c`, passed the full workflow including desktop API relay compilation.
+- Run 18, commit `5037fd0`, passed the full workflow including Docker Compose config validation.
+- Run 19, commit `d198efb`, passed the full workflow including Gradle wrapper checksum and Compose validation.
+- Run 20, commit `65fbb61`, passed the full workflow using the checked-in Gradle wrapper: wrapper checksum, JSON Schema/OpenAPI validation, Docker Compose configuration, core tests, desktop compile, API tests, PostgreSQL persistence integration and Android debug build.
 
 ## 4. Current limitations — do not misrepresent
 
@@ -82,31 +93,55 @@ No remote robot actuation in the initial release. Any later control plane needs 
 - Telemetry WebSocket fan-out is in memory, not durable.
 - No S3-compatible object storage or recording upload.
 - Desktop API relay mode uses synthetic telemetry; no real robot is connected.
-- Android API integration is not implemented.
+- Android API integration is not implemented; Android currently uses simulator mode.
 - No web client, ROS 2 gateway or Python inference runtime yet.
 - Robustness Lab profiles are deterministic synthetic perturbations, not calibrated weather physics or measured model accuracy.
 - NRC is not a safety-rated robot controller.
 
 ## 5. Immediate next tasks
 
-1. Check Run 17 final conclusion. Fix any CI issue before local testing.
-2. Validate the latest `deploy/local/compose.yaml` config in CI and ensure `.env` is gitignored.
-3. Update the roadmap, architecture and handoff with the final verified commit.
-4. If all CI checks pass, tell the user to pull `main` into Cursor for the desktop API-relay and Android build smoke tests. Give exact PowerShell commands from `deploy/local/README.md`.
-5. Ask the user to confirm the desktop dashboard shows `API RELAY · SYNTHETIC ONLINE`, the event/LiDAR/SNN panels update, and no API errors appear.
+1. Tell the user the build is green and ask them to pull the latest `main` branch into Cursor.
+2. Have them start local PostgreSQL and the API using `deploy/local/README.md`.
+3. Have them launch desktop with `NRC_API_BASE_URL=http://127.0.0.1:8080` and confirm `API RELAY · SYNTHETIC ONLINE`, live event/LiDAR/IMU/SNN panels and no API errors.
+4. Have them run `.\gradlew.bat :androidApp:assembleDebug`; Android remains simulator-only for now.
+5. Ask for the first failing terminal output or screenshot if anything does not work. Fix local issues before starting the next major feature.
 6. After local feedback, proceed with S3-compatible object storage and recording upload, then authentication/device identity.
 7. Keep Android API integration, ROS 2 gateway, Python inference runtime and web client in later milestones.
 
-## 6. Local test gate — when to involve the user
+## 6. Local testing instructions
 
-Before asking the user to pull:
-- Latest `main` GitHub Actions run is green, including core tests, desktop compile, API tests, PostgreSQL persistence integration and Android debug build.
-- Docker Compose configuration is valid.
-- Local database/API/desktop run steps are committed.
-- The desktop API-relay mode is present.
-- Provide exact PowerShell commands, expected UI status and the one thing to inspect in Cursor.
+From the repository root in PowerShell:
 
-When ready, say plainly: **“The build is green. Now pull the latest main branch and open it in Cursor; we are ready for local testing.”**
+**Start PostgreSQL**
+```powershell
+docker compose -f deploy/local/compose.yaml up -d postgres
+```
+
+**Run API in terminal 1**
+```powershell
+$env:NRC_DATABASE_URL = "jdbc:postgresql://localhost:5432/nrc"
+$env:NRC_DATABASE_USER = "nrc"
+$env:NRC_DATABASE_PASSWORD = "nrc_local_dev_only"
+$env:NRC_API_HOST = "127.0.0.1"
+$env:NRC_API_PORT = "8080"
+.\gradlew.bat :platform-api:run
+```
+
+**Run desktop API relay in terminal 2**
+```powershell
+$env:NRC_API_BASE_URL = "http://127.0.0.1:8080"
+$env:NRC_ROBOT_ID = "nrc-desktop-relay"
+.\gradlew.bat :composeApp:run
+```
+
+Expected dashboard status: `API RELAY · SYNTHETIC ONLINE`. This is a synthetic relay demonstration, not a physical robot connection.
+
+**Build Android**
+```powershell
+.\gradlew.bat :androidApp:assembleDebug
+```
+
+If a custom `NRC_DB_PASSWORD` is set in the local `.env`, use the same password in `NRC_DATABASE_PASSWORD`.
 
 ## 7. Key files
 
@@ -120,6 +155,7 @@ When ready, say plainly: **“The build is green. Now pull the latest main branc
 - `schemas/` — wire schemas and fixtures.
 - `services/platform-api/` — backend.
 - `deploy/local/README.md` — local PostgreSQL/API/desktop run instructions.
+- `gradle/wrapper/` — pinned Gradle wrapper and checksums.
 
 ## 8. Working rules
 
