@@ -17,6 +17,8 @@ The common Kotlin evaluator applies deterministic perturbations to a RobotTeleme
 
 It reports input and retained sample counts, added noise-event count, mean detection confidence before/after, and inference latency before/after.
 
+Every run also receives a versioned ExperimentManifest containing an experiment ID, source type and ID, source sequence/timestamp, model identifier/version, selected scenario and exact perturbation coefficients. In the current demo, the source and model are explicitly identified as simulated. The source timestamp is simulation time, not wall-clock time.
+
 ## Scientific limitations
 
 The current profiles are illustrative software coefficients. They are not calibrated models of atmospheric optics, event-camera physics, LiDAR backscatter, sensor failure distributions, or real model accuracy. The displayed confidence values are transformed simulator outputs, not measured precision, recall, or mAP.
@@ -25,7 +27,7 @@ The prototype must never be presented as proof of real-world robustness or as a 
 
 ## Validation roadmap
 
-1. Define a versioned experiment manifest with scenario parameters, sensor configuration, model identity and software versions.
+1. Serialize the versioned experiment manifest with dataset, sensor configuration, model identity, software commit and run parameters.
 2. Ingest real sensor recordings and preserve their original timestamps.
 3. Add dataset adapters and benchmark splits for relevant public adverse-weather/event-vision datasets.
 4. Fit and validate perturbation profiles against measured sensor degradation.

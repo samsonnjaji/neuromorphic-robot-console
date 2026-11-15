@@ -14,6 +14,8 @@ class RobustnessEvaluatorTest {
     private val evaluator = RobustnessEvaluator()
 
     private fun baseline() = RobotTelemetry(
+        sequence = 24,
+        timestampMs = 2_400,
         inferenceLatencyMs = 10f,
         eventRateHz = 10_000,
         lidar = (0 until 10).map {
@@ -38,6 +40,25 @@ class RobustnessEvaluatorTest {
         assertTrue(abs((report.meanConfidenceBefore ?: 0f) - 0.8f) < 0.0001f)
         assertTrue(abs((report.meanConfidenceAfter ?: 0f) - 0.8f) < 0.0001f)
         assertEquals(10f, report.latencyAfterMs)
+    }
+
+    @Test
+    fun manifestCapturesSourceModelScenarioAndProfileProvenance() {
+        val report = evaluator.evaluate(
+            baseline(),
+            EnvironmentScenario.HEAVY_RAIN,
+            experimentId = "NRC-TEST-0001"
+        )
+
+        assertEquals(1, report.manifest.manifestVersion)
+        assertEquals("NRC-TEST-0001", report.manifest.experimentId)
+        assertEquals(ExperimentSourceType.SIMULATOR, report.manifest.sourceType)
+        assertEquals("nrc-demo-simulator", report.manifest.sourceId)
+        assertEquals(24L, report.manifest.sourceSequence)
+        assertEquals(2_400L, report.manifest.sourceTimestampMs)
+        assertEquals("demo-perception-stack", report.manifest.modelIdentifier)
+        assertEquals(EnvironmentScenario.HEAVY_RAIN, report.manifest.scenario)
+        assertEquals(0.72f, report.manifest.lidarRetention)
     }
 
     @Test

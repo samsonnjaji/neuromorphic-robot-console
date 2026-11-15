@@ -6,14 +6,13 @@ import kotlin.math.roundToInt
 
 /**
  * Applies reproducible, synthetic sensor perturbations to a telemetry snapshot.
- *
- * This is an engineering prototype for validating the NRC experiment workflow.
- * It does not simulate calibrated atmospheric optics, sensor hardware, or model accuracy.
+ * This prototype does not simulate calibrated atmospheric optics, sensor hardware, or model accuracy.
  */
 class RobustnessEvaluator {
     fun evaluate(
         baseline: RobotTelemetry,
-        scenario: EnvironmentScenario
+        scenario: EnvironmentScenario,
+        experimentId: String = "NRC-UNTRACKED"
     ): StressTestReport {
         val retainedLidar = retainDeterministically(baseline.lidar, scenario.lidarRetention)
             .mapIndexed { index, point ->
@@ -53,7 +52,25 @@ class RobustnessEvaluator {
                 (scenario.eventRetention + scenario.addedEventNoiseFraction)).roundToInt()
         )
 
+        val manifest = ExperimentManifest(
+            experimentId = experimentId,
+            sourceType = ExperimentSourceType.SIMULATOR,
+            sourceId = "nrc-demo-simulator",
+            sourceSequence = baseline.sequence,
+            sourceTimestampMs = baseline.timestampMs,
+            modelIdentifier = "demo-perception-stack",
+            modelVersion = "simulated-v0.2",
+            scenario = scenario,
+            lidarRetention = scenario.lidarRetention,
+            eventRetention = scenario.eventRetention,
+            addedEventNoiseFraction = scenario.addedEventNoiseFraction,
+            detectionConfidenceScale = scenario.detectionConfidenceScale,
+            inferenceLatencyScale = scenario.inferenceLatencyScale,
+            lidarNoiseMeters = scenario.lidarNoiseMeters
+        )
+
         return StressTestReport(
+            manifest = manifest,
             scenario = scenario,
             stressedTelemetry = stressed,
             inputLidarPoints = baseline.lidar.size,

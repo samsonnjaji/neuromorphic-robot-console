@@ -19,6 +19,7 @@ class RobustnessLabEngine(
 ) {
     private val _state = MutableStateFlow(RobustnessLabState())
     val state: StateFlow<RobustnessLabState> = _state.asStateFlow()
+    private var experimentSequence = 0L
 
     fun selectScenario(scenario: EnvironmentScenario) {
         _state.value = _state.value.copy(
@@ -28,9 +29,11 @@ class RobustnessLabEngine(
     }
 
     fun run(telemetry: RobotTelemetry) {
+        experimentSequence += 1
+        val experimentId = "NRC-DEMO-" + experimentSequence.toString().padStart(4, '0')
         val scenario = _state.value.selectedScenario
         _state.value = _state.value.copy(
-            latestReport = evaluator.evaluate(telemetry, scenario)
+            latestReport = evaluator.evaluate(telemetry, scenario, experimentId)
         )
     }
 

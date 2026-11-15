@@ -134,6 +134,19 @@ private fun StressReportView(report: StressTestReport) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Spacer(Modifier.height(2.dp))
         Text("RESULT  /  " + report.scenario.displayName.uppercase(), color = Mint, fontSize = 12.sp)
+        Text(
+            report.manifest.experimentId + "  •  " +
+                report.manifest.sourceType.name + "  •  " +
+                report.manifest.modelIdentifier + " " + report.manifest.modelVersion,
+            color = Muted,
+            fontSize = 9.sp
+        )
+        Text(
+            "Source frame " + report.manifest.sourceSequence +
+                "  •  source timestamp " + report.manifest.sourceTimestampMs + " ms",
+            color = Muted,
+            fontSize = 9.sp
+        )
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
             ResultMetric(
                 "LiDAR retained",

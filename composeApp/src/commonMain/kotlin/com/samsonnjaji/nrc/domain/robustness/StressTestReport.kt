@@ -4,6 +4,7 @@ import com.samsonnjaji.nrc.domain.model.RobotTelemetry
 import kotlin.math.roundToInt
 
 data class StressTestReport(
+    val manifest: ExperimentManifest,
     val scenario: EnvironmentScenario,
     val stressedTelemetry: RobotTelemetry,
     val inputLidarPoints: Int,
