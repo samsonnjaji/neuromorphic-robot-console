@@ -10,6 +10,24 @@ permissions:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: nrc_test
+          POSTGRES_USER: nrc
+          POSTGRES_PASSWORD: nrc_test_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U nrc -d nrc_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      NRC_TEST_DATABASE_URL: jdbc:postgresql://localhost:5432/nrc_test
+      NRC_TEST_DATABASE_USER: nrc
+      NRC_TEST_DATABASE_PASSWORD: nrc_test_password
     steps:
       - name: Check out source
         uses: actions/checkout@v4

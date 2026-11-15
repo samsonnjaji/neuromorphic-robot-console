@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: nrc-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: nrc
+      POSTGRES_USER: nrc
+      POSTGRES_PASSWORD: ${NRC_DB_PASSWORD:-nrc_local_dev_only}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - nrc-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nrc -d nrc"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  nrc-postgres-data:
