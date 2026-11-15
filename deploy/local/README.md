@@ -10,7 +10,7 @@ From the repository root:
 Copy-Item .env.example .env
 ```
 
-Edit `.env` and populate the blank credential fields before starting Compose:
+Edit `.env` and populate the blank credential fields before starting Compose. If you already have an untracked `.env` from the earlier local setup, rename its PostgreSQL Compose credential key to `NRC_DB_CREDENTIAL` while retaining the existing value; this does not change the PostgreSQL role password.
 - Set `NRC_POSTGRES_HOST_PORT=5435` if native PostgreSQL already owns host port 5432.
 - Set `NRC_DB_CREDENTIAL` to the existing local password for the `nrc` database role if reusing the current PostgreSQL data volume. Changing this environment variable alone does not change an existing database user's password.
 - Set a strong, unique local `NRC_OBJECT_STORE_SECRET_KEY` and a local access key. Use the same values in the API process environment. The example file intentionally contains no usable credentials.

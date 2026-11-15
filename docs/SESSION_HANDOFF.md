@@ -131,7 +131,7 @@ After PR #14 is merged:
    git pull --ff-only origin main
    Copy-Item .env.example .env
    ```
-2. Edit `.env`: set `NRC_POSTGRES_HOST_PORT=5435`; keep the existing local `NRC_DB_CREDENTIAL` from your untracked `.env` if reusing the current volume; set a local `NRC_OBJECT_STORE_SECRET_KEY`. Use the same database/object-store credentials in the API process.
+2. Edit `.env`: set `NRC_POSTGRES_HOST_PORT=5435`; rename the earlier PostgreSQL Compose credential key to `NRC_DB_CREDENTIAL` while retaining its existing local value if reusing the current volume; populate the RustFS access and secret keys. Use the same database/object-store credentials in the API process.
 3. Stop the old API and desktop processes with Ctrl+C. Do not delete the existing PostgreSQL volume.
 4. Start PostgreSQL and RustFS from Ubuntu WSL:
    ```bash
