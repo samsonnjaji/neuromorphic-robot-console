@@ -10,6 +10,7 @@ junit = "4.13.2"
 hikaricp = "7.1.0"
 postgresql = "42.7.14"
 flyway = "13.12.2"
+aws-sdk = "2.59.0"
 
 [libraries]
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
@@ -32,6 +33,9 @@ hikari = { module = "com.zaxxer:HikariCP", version.ref = "hikaricp" }
 postgresql = { module = "org.postgresql:postgresql", version.ref = "postgresql" }
 flyway-core = { module = "org.flywaydb:flyway-core", version.ref = "flyway" }
 flyway-database-postgresql = { module = "org.flywaydb:flyway-database-postgresql", version.ref = "flyway" }
+aws-s3 = { module = "software.amazon.awssdk:s3", version.ref = "aws-sdk" }
+aws-auth = { module = "software.amazon.awssdk:auth", version.ref = "aws-sdk" }
+aws-apache-client = { module = "software.amazon.awssdk:apache-client", version.ref = "aws-sdk" }
 
 [plugins]
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }

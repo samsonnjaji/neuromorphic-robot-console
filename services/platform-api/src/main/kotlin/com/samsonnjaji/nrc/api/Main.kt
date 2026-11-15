@@ -1,5 +1,8 @@
 package com.samsonnjaji.nrc.api
 
+import com.samsonnjaji.nrc.api.artifacts.ArtifactRepository
+import com.samsonnjaji.nrc.api.artifacts.InMemoryArtifactRepository
+import com.samsonnjaji.nrc.api.artifacts.JdbcArtifactRepository
 import com.samsonnjaji.nrc.api.database.createNrcDataSource
 import com.samsonnjaji.nrc.api.experiments.ExperimentRepository
 import com.samsonnjaji.nrc.api.experiments.ExperimentRunRepository
@@ -10,9 +13,12 @@ import com.samsonnjaji.nrc.api.experiments.JdbcExperimentRepository
 import com.samsonnjaji.nrc.api.experiments.JdbcExperimentRunRepository
 import com.samsonnjaji.nrc.api.experiments.JdbcRecordingSessionRepository
 import com.samsonnjaji.nrc.api.experiments.RecordingSessionRepository
+import com.samsonnjaji.nrc.api.storage.S3CompatibleArtifactObjectStorage
+import com.samsonnjaji.nrc.api.storage.S3ObjectStorageConfig
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import org.flywaydb.core.Flyway
+import java.net.URI
 
 fun main() {
     val databaseUrl = System.getenv("NRC_DATABASE_URL")?.takeIf { it.isNotBlank() }
@@ -53,11 +59,47 @@ fun main() {
         InMemoryRecordingSessionRepository()
     }
 
+    val artifactRepository: ArtifactRepository = if (dataSource != null) {
+        JdbcArtifactRepository(dataSource)
+    } else {
+        InMemoryArtifactRepository()
+    }
+
+    val objectStorageEndpoint = System.getenv("NRC_OBJECT_STORE_ENDPOINT")?.takeIf { it.isNotBlank() }
+    val artifactObjectStorage = objectStorageEndpoint?.let { endpoint ->
+        val accessKey = requireNotNull(System.getenv("NRC_OBJECT_STORE_ACCESS_KEY")) {
+            "NRC_OBJECT_STORE_ACCESS_KEY is required when object storage is configured."
+        }
+        val secretKey = requireNotNull(System.getenv("NRC_OBJECT_STORE_SECRET_KEY")) {
+            "NRC_OBJECT_STORE_SECRET_KEY is required when object storage is configured."
+        }
+        S3CompatibleArtifactObjectStorage(
+            S3ObjectStorageConfig(
+                endpoint = URI.create(endpoint),
+                bucket = System.getenv("NRC_OBJECT_STORE_BUCKET")?.takeIf { it.isNotBlank() } ?: "nrc-artifacts",
+                accessKey = accessKey,
+                secretKey = secretKey,
+                region = System.getenv("NRC_OBJECT_STORE_REGION") ?: "us-east-1",
+                pathStyleAccess = System.getenv("NRC_OBJECT_STORE_PATH_STYLE")?.toBooleanStrictOrNull() ?: true,
+                presignTtlSeconds = System.getenv("NRC_OBJECT_STORE_PRESIGN_TTL_SECONDS")?.toLongOrNull() ?: 900
+            )
+        ).also { storage ->
+            storage.ensureBucket()
+        }
+    }
+
+    if (artifactObjectStorage == null) {
+        println("NRC_OBJECT_STORE_ENDPOINT is not configured; artifact upload/download endpoints will return 503.")
+    }
+
     val host = System.getenv("NRC_API_HOST") ?: "127.0.0.1"
     val port = System.getenv("NRC_API_PORT")?.toIntOrNull() ?: 8080
 
-    if (dataSource != null) {
-        Runtime.getRuntime().addShutdownHook(Thread { dataSource.close() })
+    if (dataSource != null || artifactObjectStorage != null) {
+        Runtime.getRuntime().addShutdownHook(Thread {
+            artifactObjectStorage?.close()
+            dataSource?.close()
+        })
     }
 
     embeddedServer(
@@ -68,7 +110,9 @@ fun main() {
             module(
                 experimentRepository = repository,
                 experimentRunRepository = experimentRunRepository,
-                recordingSessionRepository = recordingSessionRepository
+                recordingSessionRepository = recordingSessionRepository,
+                artifactRepository = artifactRepository,
+                artifactObjectStorage = artifactObjectStorage
             )
         }
     ).start(wait = true)

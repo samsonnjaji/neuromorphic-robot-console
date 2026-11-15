@@ -1,7 +1,7 @@
 # NRC Platform Architecture
 
 **Status:** Target architecture, accepted and being implemented in validated stages  
-**Current baseline:** Kotlin Multiplatform core, Android/desktop simulator clients, Ktor API MVP, PostgreSQL experiment/run/recording metadata and validated local desktop relay  
+**Current baseline:** Kotlin Multiplatform core, Android/desktop simulator clients, Ktor API MVP, PostgreSQL experiment/run/recording/artifact metadata, S3-compatible artifact upload and validated local desktop relay  
 **Architecture principle:** one shared robotics intelligence and experiment model, multiple clients and deployment modes.
 
 ## 1. Product boundary
@@ -89,14 +89,18 @@ The existing `composeApp` remains the Compose presentation/application module an
 - `WS /api/v1/robots/{robotId}/stream` for live telemetry fan-out.
 - Typed request validation, sequence validation and structured error responses.
 - In-memory repository for tests and no-database development.
-- PostgreSQL repositories for durable experiment definitions, experiment runs and recording-session metadata, using HikariCP and Flyway migrations.
+- PostgreSQL repositories for durable experiment definitions, experiment runs, recording-session metadata and artifact metadata, using HikariCP and Flyway migrations.
+- S3-compatible artifact storage adapter using the AWS SDK v2; RustFS is the local object-store service.
+- Presigned single-PUT and multipart uploads for finalized recording sessions, with server-side size and SHA-256 verification and verified-only download URLs.
 - Experiment runs retain a source revision, JSON configuration snapshot, lifecycle timestamps, result summary and failure reason.
-- Recording sessions retain format, source identity, metadata, sample count and lifecycle timestamps. The current implementation registers metadata only; it does not upload or retain recording binaries.
+- Recording sessions retain format, source identity, metadata, sample count and lifecycle timestamps.
+- Artifact registry records file name, content type, byte size, expected SHA-256, object key, upload mode, ETag and verification status.
+- S3-compatible object storage supports presigned single-part and multipart upload, streaming SHA-256 verification and short-lived download URLs. RustFS is the local development provider; the API uses the AWS SDK for Java v2.
 - Local PostgreSQL service definition in `deploy/local/compose.yaml`.
 
 The clients must not connect directly to databases or inference workers.
 
-**Not implemented yet:** user/device authentication, organisation/tenant isolation, audit events, PostgreSQL-backed telemetry history, recording uploads, object storage, rate limits and production deployment hardening. Do not expose this unauthenticated MVP to a public network.
+**Not implemented yet:** user/device authentication, organisation/tenant isolation, audit events, PostgreSQL-backed telemetry history, automatic cleanup of abandoned multipart uploads, retention policies, rate limits and production deployment hardening. Do not expose this unauthenticated MVP to a public network.
 
 ### C. NRC Edge Gateway — robot connectivity
 
@@ -140,7 +144,7 @@ Android and desktop currently share a Kotlin Multiplatform Compose codebase. The
 ## 4. Data and storage architecture
 
 - **PostgreSQL:** currently stores experiment definitions, experiment-run metadata and recording-session metadata. Target scope also includes users, organisations, device registry, manifests, model/dataset metadata, report indexes and audit events.
-- **S3-compatible object storage:** planned for large MCAP/ROS bag recordings, image/video sequences, benchmark artifacts and exported reports.
+- **S3-compatible object storage:** stores uploaded recording and experiment artifacts. RustFS is used locally; AWS S3 and other compatible providers can be configured. Large MCAP/ROS bag recordings, image/video sequences, benchmark artifacts and exported reports belong here, not in PostgreSQL.
 - **Local edge buffer:** planned for temporary recording chunks and queued telemetry when offline.
 - **Client cache:** limited recent state and metadata; never the canonical experiment record.
 
@@ -177,12 +181,19 @@ The current local development setup starts PostgreSQL with Docker Compose. API m
 | `GET /api/v1/runs/{runId}/recordings` | List recording sessions for a run |
 | `GET /api/v1/recordings/{recordingId}` | Retrieve recording-session metadata |
 | `POST /api/v1/recordings/{recordingId}/transition` | Advance a recording-session lifecycle state |
+| `POST /api/v1/recordings/{recordingId}/artifacts` | Register an artifact and initiate upload |
+| `GET /api/v1/recordings/{recordingId}/artifacts` | List recording artifacts |
+| `GET /api/v1/artifacts/{artifactId}` | Retrieve artifact metadata/status |
+| `POST /api/v1/artifacts/{artifactId}/upload-url` | Refresh a single-part upload URL |
+| `POST /api/v1/artifacts/{artifactId}/parts/{partNumber}/upload-url` | Create a multipart part URL |
+| `POST /api/v1/artifacts/{artifactId}/complete` | Complete upload and verify size/SHA-256 |
+| `POST /api/v1/artifacts/{artifactId}/download-url` | Create a download URL for a verified artifact |
 | `POST /api/v1/robots/{robotId}/telemetry` | Validate and ingest a telemetry snapshot |
 | `WS /api/v1/robots/{robotId}/stream` | Subscribe to live telemetry snapshots |
 
 ### Planned API routes
 
-Robot registry, authenticated users/organisations, artifact registration and S3-compatible recording upload coordination, model registry and dataset registry will be added in subsequent milestones.
+Robot registry, authenticated users/organisations, model registry, dataset registry, upload-retention policies and automated cleanup of abandoned multipart uploads will be added in subsequent milestones.
 
 ### Versioned contracts
 
@@ -223,7 +234,7 @@ neuromorphic-robot-console/
 ├── composeApp/                    # Existing shared Compose presentation + desktop
 ├── androidApp/                    # Existing Android application shell
 ├── services/platform-api/         # Ktor API + PostgreSQL repository
-├── deploy/local/                  # Local PostgreSQL Compose setup
+├── deploy/local/                  # Local PostgreSQL + RustFS Compose setup
 ├── schemas/                       # Versioned JSON contracts and fixtures
 ├── scripts/                       # Schema validation
 ├── clients/web/                   # Browser client (planned)
@@ -261,7 +272,7 @@ neuromorphic-robot-console/
 | Recording-session metadata lifecycle API | Implemented; CI verified |
 | Local PostgreSQL Docker Compose setup | Implemented |
 | Authentication and organisation access controls | Planned |
-| S3-compatible recording storage | Planned |
+| S3-compatible recording storage | Implemented; CI verified, local smoke test pending |
 | ROS 2 edge gateway | Planned |
 | Python inference workers | Planned |
 | Web client | Planned |

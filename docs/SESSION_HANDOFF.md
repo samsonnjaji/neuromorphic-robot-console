@@ -2,20 +2,20 @@
 
 **Last updated:** 2026-11-15  
 **Repository:** https://github.com/samsonnjaji/neuromorphic-robot-console  
-**Base branch:** `main`
-**Active development branch:** `feat/experiment-recording-lifecycle`  
-**Latest feature commit:** `a5d6d5965de186a44009f24f6cdb76020ec8fe77`  
-**Feature PR:** [PR #13 — experiment and recording lifecycle](https://github.com/samsonnjaji/neuromorphic-robot-console/pull/13)  
-**Push CI:** [Run 25 — success](https://github.com/samsonnjaji/neuromorphic-robot-console/actions/runs/43707369909)  
-**Pull-request CI:** [Run 26 — success](https://github.com/samsonnjaji/neuromorphic-robot-console/actions/runs/43707445882).
+**Base branch:** `main`  
+**Active development branch:** `feat/s3-artifact-storage`  
+**Artifact implementation commit:** `5099038d9a5cbb180f2d32681f28571ef9e89a1c`  
+**Feature PR:** [PR #14 — S3-compatible artifact storage and recording uploads](https://github.com/samsonnjaji/neuromorphic-robot-console/pull/14)  
+**Push CI:** [Run 33 — success](https://github.com/samsonnjaji/neuromorphic-robot-console/actions/runs/43710393113).  
+**PR status:** Open; pull-request CI must be checked before merge.
 
 ## 1. Instruction for the next ChatGPT session
 
-Continue work in the existing GitHub repository. Do not restart the architecture exercise and do not ask the user to repeat prior decisions. First read this file, then inspect the current `main` branch and the latest GitHub Actions run. The remote repository is the source of truth. The handoff itself may be updated by later documentation commits; always verify the current branch head and latest run before acting.
+Continue in the existing repository. Do not restart architecture planning or ask the user to repeat decisions. First inspect the current `main` branch, active PR and latest GitHub Actions run; the remote repository is the source of truth.
 
-The user wants to be told explicitly when to pull the code onto their Windows PC and open it in Cursor for application testing. The first local gate was completed on 2026-11-15: Windows 11/JDK 17, Gradle 9.7, Android SDK, Docker engine through Ubuntu WSL, PostgreSQL on host port 5435, API health and experiment CRUD, persistence across API restart, desktop REST/WebSocket relay and Android debug build. The new experiment-run and recording-session feature now passes both push CI Run 25 and PR CI Run 26. **The next action is to tell the user to pull `feat/experiment-recording-lifecycle` and run the new local migration/API smoke test before MinIO work.**
+The user wants to be told explicitly when to pull the code onto their Windows PC and open it in Cursor. The earlier local gate is complete: Windows 11/JDK 17, Gradle 9.7, Android SDK, Docker engine through Ubuntu WSL, PostgreSQL exposed on host port 5435, API health/experiment CRUD, persistence across API restart, desktop REST/WebSocket relay and Android debug build. The new artifact-storage code has passed push CI Run 33, but **the new artifact workflow has not yet been smoke-tested on the user's PC**. PR #14 is open. Do not tell the user to pull yet; first confirm PR CI is green and merge PR #14. Then ask the user to pull the updated `main` branch and run the RustFS + PostgreSQL V3 artifact upload/download smoke test.
 
-Keep this handoff file current after each substantial milestone. Record commit SHAs, CI run links, implemented work, known issues and the next exact task. Do not claim tests passed without checking the run.
+Keep this handoff and roadmap current after substantial milestones. Record commit SHAs, PR links, CI runs, implemented work, limitations and the next exact task. Never claim a test passed without checking its run.
 
 ## 2. Product direction and agreed architecture
 
@@ -55,15 +55,19 @@ No remote robot actuation in the initial release. Any later control plane needs 
 - Telemetry POST ingestion and WebSocket stream endpoint.
 - Typed validation, stream sequence guard and structured errors.
 - In-memory repository for tests/no-database local development.
-- PostgreSQL JDBC repositories using HikariCP for experiment definitions, experiment runs and recording-session metadata.
-- Flyway V1/V2 migrations for experiment definitions, runs and recording sessions.
+- PostgreSQL JDBC repositories using HikariCP for experiment definitions, experiment runs, recording-session metadata and artifact metadata.
+- Flyway V1/V2/V3 migrations for experiment definitions, runs, recording sessions and artifact registry.
 - Validated run lifecycle: CREATED -> RUNNING -> COMPLETED/FAILED/CANCELLED, with CREATED -> CANCELLED.
 - Validated recording lifecycle: CREATED -> RECORDING -> FINALIZED/FAILED/CANCELLED, with CREATED -> CANCELLED.
 - Run configuration/source revision provenance, result summary and failure reason.
 - Recording format/source identity/metadata/sample count and lifecycle timestamps.
+- PostgreSQL artifact registry with upload status, file metadata, object key, ETag and expected SHA-256.
+- S3-compatible single-part and multipart presigned upload coordination, streaming byte-size/SHA-256 verification and verified-only download URLs.
+- RustFS local Compose service with persistent volumes and a non-root volume-permission helper; provider-neutral AWS SDK for Java v2.
+- Artifact upload API is implemented on PR #14; push CI Run 33 passed. PR CI must pass before merge. Desktop/Android upload UI and real ROS 2 ingestion are not implemented.
 - Docker Compose PostgreSQL service in `deploy/local/compose.yaml`.
 - PowerShell local startup and smoke-test guide in `deploy/local/README.md`.
-- PostgreSQL persistence integration test, wired to CI PostgreSQL service.
+- PostgreSQL persistence integration tests, wired to the CI PostgreSQL service.
 
 ### Desktop API relay
 - Common `NrcTelemetrySource` interface.
@@ -98,9 +102,9 @@ No remote robot actuation in the initial release. Any later control plane needs 
 
 - No authentication or device credential flow.
 - API is a local MVP and binds to `127.0.0.1` by default.
-- PostgreSQL stores experiment definitions, experiment-run metadata and recording-session metadata; raw recording binaries are not stored there.
+- PostgreSQL stores experiment definitions, run/recording metadata and artifact registry records. Raw recording binaries are stored in configured S3-compatible object storage, not PostgreSQL.
 - Telemetry WebSocket fan-out is in memory, not durable.
-- No S3-compatible object storage or recording upload.
+- Automatic cleanup of abandoned multipart uploads and object retention policies are not implemented yet.
 - Desktop API relay mode uses synthetic telemetry; no real robot is connected.
 - Android API integration is not implemented; Android currently uses simulator mode.
 - No web client, ROS 2 gateway or Python inference runtime yet.
@@ -109,49 +113,53 @@ No remote robot actuation in the initial release. Any later control plane needs 
 
 ## 5. Immediate next tasks
 
-1. Ask the user to pull `feat/experiment-recording-lifecycle` into Cursor and run the local V2 migration plus experiment-run/recording-session API smoke test.
-2. Resolve any workstation-specific migration or API issues without deleting existing local database records.
-3. Add artifact metadata registration and S3-compatible object storage using MinIO for local development, with upload coordination and SHA-256 verification.
-4. Add authentication and device credentials before any non-local deployment.
-5. Continue with MCAP/ROS 2 ingestion, Python inference workers, measured SNN/conventional baselines and reproducible reports.
+1. Check PR #14 and its pull-request CI; merge only after the required checks pass.
+2. Tell the user to pull the merged `main` branch into Cursor. Preserve the existing local PostgreSQL volume and data.
+3. Run the Windows local smoke test for Flyway V3, RustFS, single-PUT upload, server-side SHA-256 verification and verified download. The existing local PostgreSQL host port was 5435; retain it if 5432 remains occupied.
+4. Fix any local issues and update the handoff with the verified result.
+5. Implement the read-only ROS 2/MCAP edge gateway and connect a real recording; keep inference workers, scientific model comparison and authentication sequenced behind this validated ingestion path.
 
 ## 6. Local testing instructions
 
-From the repository root in PowerShell:
+The user's Windows checkout is `C:\Users\njaji\Projects\neuromorphic-robot-console`. Docker is available through Ubuntu WSL; Windows PowerShell does not expose `docker.exe`. Native PostgreSQL owns host port 5432, so the NRC container is exposed on host port 5435. The existing NRC PostgreSQL container, API and desktop app were still running at the last report.
 
-**Start PostgreSQL**
-```powershell
-docker compose -f deploy/local/compose.yaml up -d postgres
-```
+After PR #14 is merged:
 
-The default host port is `5432`. If the host already has PostgreSQL on that port, set `NRC_POSTGRES_HOST_PORT=5435` in the repository-root `.env` file and use `jdbc:postgresql://localhost:5435/nrc` for the API. Docker still exposes PostgreSQL internally on container port `5432`.
+1. In PowerShell at the repository root:
+   ```powershell
+   git switch main
+   git pull --ff-only origin main
+   Copy-Item .env.example .env
+   ```
+2. Edit `.env`: set `NRC_POSTGRES_HOST_PORT=5435`; keep the existing local `NRC_DB_CREDENTIAL` from your untracked `.env` if reusing the current volume; set a local `NRC_OBJECT_STORE_SECRET_KEY`. Use the same database/object-store credentials in the API process.
+3. Stop the old API and desktop processes with Ctrl+C. Do not delete the existing PostgreSQL volume.
+4. Start PostgreSQL and RustFS from Ubuntu WSL:
+   ```bash
+   cd /mnt/c/Users/njaji/Projects/neuromorphic-robot-console
+   docker compose -f deploy/local/compose.yaml up -d postgres rustfs
+   docker compose -f deploy/local/compose.yaml ps
+   ```
+5. In PowerShell, start the API with:
+   ```powershell
+   $env:NRC_DATABASE_URL = "jdbc:postgresql://localhost:5435/nrc"
+   $env:NRC_DATABASE_USER = "nrc"
+   $env:NRC_DATABASE_PASSWORD = "<existing local NRC_DB_CREDENTIAL from .env>"
+   $env:NRC_API_HOST = "127.0.0.1"
+   $env:NRC_API_PORT = "8080"
+   $env:NRC_OBJECT_STORE_ENDPOINT = "http://127.0.0.1:9000"
+   $env:NRC_OBJECT_STORE_ACCESS_KEY = "<local NRC_OBJECT_STORE_ACCESS_KEY from .env>"
+   $env:NRC_OBJECT_STORE_SECRET_KEY = "same value as .env"
+   $env:NRC_OBJECT_STORE_BUCKET = "nrc-artifacts"
+   $env:NRC_OBJECT_STORE_REGION = "us-east-1"
+   $env:NRC_OBJECT_STORE_PATH_STYLE = "true"
+   $env:NRC_OBJECT_STORE_PRESIGN_TTL_SECONDS = "900"
+   .\gradlew.bat :platform-api:run
+   ```
+6. Verify `GET /api/v1/health`, create/finalize a recording session, upload a small file using the presigned URL, complete it, retrieve a download URL and confirm the downloaded SHA-256 equals the original. Follow `deploy/local/README.md` for the complete PowerShell commands.
+7. Build Android using `.\gradlew.bat :androidApp:assembleDebug`.
 
-**Run API in terminal 1**
-```powershell
-$env:NRC_DATABASE_URL = "jdbc:postgresql://localhost:5432/nrc"
-$env:NRC_DATABASE_USER = "nrc"
-$env:NRC_DATABASE_PASSWORD = "nrc_local_dev_only"
-$env:NRC_API_HOST = "127.0.0.1"
-$env:NRC_API_PORT = "8080"
-.\gradlew.bat :platform-api:run
-```
-
-**Run desktop API relay in terminal 2**
-```powershell
-$env:NRC_API_BASE_URL = "http://127.0.0.1:8080"
-$env:NRC_ROBOT_ID = "nrc-desktop-relay"
-.\gradlew.bat :composeApp:run
-```
-
-Expected dashboard status: `API RELAY · SYNTHETIC ONLINE`. This is a synthetic relay demonstration, not a physical robot connection.
-
-**Build Android**
-```powershell
-.\gradlew.bat :androidApp:assembleDebug
-```
-
-If a custom `NRC_DB_PASSWORD` is set in the local `.env`, use the same password in `NRC_DATABASE_PASSWORD`.
-
+Never run `docker compose down -v` during this test. The API and object store remain localhost-only and unauthenticated. The desktop API relay is still synthetic and read-only; it is not a physical robot connection.
+ 
 ## 7. Key files
 
 - `docs/PLATFORM_ARCHITECTURE.md` — target and current architecture.
@@ -163,7 +171,7 @@ If a custom `NRC_DB_PASSWORD` is set in the local `.env`, use the same password 
 - `docs/ADR/ADR-002-data-contracts.md` — versioned data contracts.
 - `schemas/` — wire schemas and fixtures.
 - `services/platform-api/` — backend.
-- `deploy/local/README.md` — local PostgreSQL/API/desktop run instructions.
+- `deploy/local/README.md` — local PostgreSQL/RustFS/API/desktop/artifact upload instructions.
 - `gradle/wrapper/` — pinned Gradle wrapper and checksums.
 
 ## 8. Working rules
@@ -173,7 +181,7 @@ If a custom `NRC_DB_PASSWORD` is set in the local `.env`, use the same password 
 - Run and inspect CI after each meaningful code change.
 - Preserve the current simulator and existing app behavior.
 - Keep Android and desktop builds green.
-- Keep raw sensor recordings out of relational tables and unbounded WebSocket payloads.
+- Keep raw sensor recordings out of relational tables and unbounded WebSocket payloads; use object storage for binary artifacts.
 - Keep synthetic, estimated and measured data clearly distinguished.
 - Do not enable remote actuation.
 - Update this handoff and roadmap before finishing a substantial work session.

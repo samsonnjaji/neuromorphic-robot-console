@@ -54,9 +54,9 @@ The `RobustnessLabEngine` in `nrc-core` applies a selected `EnvironmentScenario`
 
 ## Local API data flow
 
-The Ktor API is a separate JVM process. It exposes experiment metadata routes and a read-only telemetry ingest/stream path. When `NRC_DATABASE_URL` and database credentials are configured, the application creates a HikariCP connection pool, applies Flyway migrations and uses `JdbcExperimentRepository` for durable experiment metadata. When no database URL is configured, it explicitly falls back to an in-memory repository for local development and tests.
+The Ktor API is a separate JVM process. It exposes experiment/run/recording routes, artifact upload coordination and a read-only telemetry ingest/stream path. When `NRC_DATABASE_URL` and database credentials are configured, the application creates a HikariCP connection pool, applies Flyway migrations V1–V3 and uses JDBC repositories for durable experiment, run, recording-session and artifact metadata. When no database URL is configured, it explicitly falls back to in-memory repositories for local development and tests.
 
-Telemetry ingestion is validated by `TelemetryStreamGuard` for schema version, message type, robot identity, matching envelope/payload sequence and timestamp. Accepted snapshots are published through a bounded in-memory `TelemetryHub` to connected WebSocket subscribers. This live stream is not a durable recording store.
+Telemetry ingestion is validated by `TelemetryStreamGuard` for schema version, message type, robot identity, matching envelope/payload sequence and timestamp. Accepted snapshots are published through a bounded in-memory `TelemetryHub` to connected WebSocket subscribers. This live stream is not a durable recording store. Binary artifacts are uploaded directly to S3-compatible object storage using short-lived presigned URLs; PostgreSQL stores their metadata and verification state. The API reads completed objects to verify byte count and SHA-256 before allowing a download URL.
 
 ## Desktop API relay test mode
 
@@ -69,14 +69,14 @@ This mode validates the desktop → REST API → WebSocket → desktop path. It 
 - `core/nrc-core`: independent Kotlin Multiplatform domain models, telemetry validation, safety-envelope logic, mission recording, robustness evaluation, transport interfaces and core tests.
 - `composeApp`: shared Compose presentation, dashboard, simulator source and current application wiring; JVM desktop entry point and API relay source.
 - `androidApp`: Android-specific application shell that consumes `composeApp`.
-- `services/platform-api`: Ktor service, experiment repository abstraction, in-memory and PostgreSQL repositories, telemetry fan-out, Flyway migrations and API tests.
-- `deploy/local`: local PostgreSQL Compose configuration and PowerShell instructions.
+- `services/platform-api`: Ktor service, experiment/run/recording/artifact repositories, S3-compatible object storage adapter, telemetry fan-out, Flyway migrations and API tests.
+- `deploy/local`: local PostgreSQL + RustFS Compose configuration and PowerShell instructions.
 - `docs/api`: OpenAPI 3.1 document and API reference.
 - `schemas`: versioned JSON contracts and positive/negative fixtures.
 - `scripts`: schema and OpenAPI validation utility.
 
 ## Not yet implemented
 
-Authentication, tenant boundaries, S3-compatible object storage, recording upload, Android API integration, ROS 2 gateway, Python inference runtime and web client remain planned. See [PLATFORM_ARCHITECTURE.md](PLATFORM_ARCHITECTURE.md), [PLATFORM_ROADMAP.md](PLATFORM_ROADMAP.md) and [SESSION_HANDOFF.md](SESSION_HANDOFF.md).
+Authentication, tenant boundaries, desktop/Android artifact-upload UI, Android API integration, ROS 2 gateway, Python inference runtime and web client remain planned. See [PLATFORM_ARCHITECTURE.md](PLATFORM_ARCHITECTURE.md), [PLATFORM_ROADMAP.md](PLATFORM_ROADMAP.md) and [SESSION_HANDOFF.md](SESSION_HANDOFF.md).
 
 The first edge gateway is read-only. Any future motion-command channel requires a separate safety architecture and independent validation.

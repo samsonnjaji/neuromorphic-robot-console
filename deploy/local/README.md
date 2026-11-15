@@ -1,44 +1,76 @@
 # NRC local development services
 
-This Compose file starts PostgreSQL for the NRC Platform API. It binds the database to loopback only; it is intended for local development, not public deployment.
+This Compose file starts PostgreSQL and RustFS for the NRC Platform API. Both bind to loopback only and are intended for local development, not public deployment.
 
-## 1. Start PostgreSQL
+## 1. Configure local services
 
 From the repository root:
 
 ```powershell
-docker compose -f deploy/local/compose.yaml up -d postgres
+Copy-Item .env.example .env
+```
+
+Edit `.env` and populate the blank credential fields before starting Compose:
+- Set `NRC_POSTGRES_HOST_PORT=5435` if native PostgreSQL already owns host port 5432.
+- Set `NRC_DB_CREDENTIAL` to the existing local password for the `nrc` database role if reusing the current PostgreSQL data volume. Changing this environment variable alone does not change an existing database user's password.
+- Set a strong, unique local `NRC_OBJECT_STORE_SECRET_KEY` and a local access key. Use the same values in the API process environment. The example file intentionally contains no usable credentials.
+
+The root `.env` file is ignored by Git. Never commit credentials.
+
+Default local ports:
+- PostgreSQL: `127.0.0.1:5432` (or the configured host port, e.g. 5435)
+- RustFS S3 API: `127.0.0.1:9000`
+- RustFS console: `http://127.0.0.1:9001`
+
+If the Docker CLI is available only inside Ubuntu WSL, run Compose from that WSL distribution after changing to the Windows checkout mounted at `/mnt/c/Users/njaji/Projects/neuromorphic-robot-console`:
+
+```bash
+docker compose -f deploy/local/compose.yaml up -d postgres rustfs
 docker compose -f deploy/local/compose.yaml ps
 ```
 
-If the Docker CLI is available only inside Ubuntu WSL, run the Compose commands in that WSL distribution from the Windows checkout mounted under `/mnt/c/Users/njaji/Projects/neuromorphic-robot-console`. The API and desktop can still run from Windows PowerShell and connect through `localhost`.
+The Compose file includes a one-shot volume-permission helper for RustFS because its container runs as a non-root user. Existing named volumes are preserved; do not use `down -v`.
 
-By default PostgreSQL is exposed on host port `5432`. If another local PostgreSQL service already owns that port, set `NRC_POSTGRES_HOST_PORT=5435` in the repository-root `.env` file before starting Compose. The container still listens on `5432`; only the host-side port changes. In that case, use `jdbc:postgresql://localhost:5435/nrc` for `NRC_DATABASE_URL` below. The default remains `5432` for machines without a port conflict.
+## 2. Start PostgreSQL and RustFS
 
-The local-only default password is `nrc_local_dev_only`. For a custom local password, copy `.env.example` to `.env`, set `NRC_DB_PASSWORD`, and use the same value in the API terminal. The root `.env` file is ignored by Git.
-
-Do not reuse a development password outside a local workstation.
-
-## 2. Run the API from PowerShell
-
-Open a second terminal at the repository root:
+From PowerShell when the Docker CLI is available:
 
 ```powershell
-$env:NRC_DATABASE_URL = "jdbc:postgresql://localhost:5432/nrc"
-# If NRC_POSTGRES_HOST_PORT=5435 is set in .env, use this instead:
-# $env:NRC_DATABASE_URL = "jdbc:postgresql://localhost:5435/nrc"
+docker compose -f deploy/local/compose.yaml up -d postgres rustfs
+docker compose -f deploy/local/compose.yaml ps
+```
+
+Wait until both services report healthy. The RustFS console is available at `http://127.0.0.1:9001`; use the access key and secret from `.env`.
+
+If an existing PostgreSQL container is recreated because the Compose configuration changed, the named data volume is retained. Never delete it during routine updates.
+
+## 3. Run the API from PowerShell
+
+Open a second terminal at the repository root. Set the database port to match `NRC_POSTGRES_HOST_PORT` in `.env`. For a workstation where native PostgreSQL owns 5432, use 5435:
+
+```powershell
+$env:NRC_DATABASE_URL = "jdbc:postgresql://localhost:5435/nrc"
 $env:NRC_DATABASE_USER = "nrc"
-$env:NRC_DATABASE_PASSWORD = "nrc_local_dev_only"
+$env:NRC_DATABASE_PASSWORD = "replace-with-your-NRC_DB_CREDENTIAL"
+$env:NRC_OBJECT_STORE_ENDPOINT = "http://127.0.0.1:9000"
+$env:NRC_OBJECT_STORE_ACCESS_KEY = "<your local NRC_OBJECT_STORE_ACCESS_KEY from .env>"
+$env:NRC_OBJECT_STORE_SECRET_KEY = "replace-with-your-NRC_OBJECT_STORE_SECRET_KEY"
+$env:NRC_OBJECT_STORE_BUCKET = "nrc-artifacts"
+$env:NRC_OBJECT_STORE_REGION = "us-east-1"
+$env:NRC_OBJECT_STORE_PATH_STYLE = "true"
+$env:NRC_OBJECT_STORE_PRESIGN_TTL_SECONDS = "900"
 $env:NRC_API_HOST = "127.0.0.1"
 $env:NRC_API_PORT = "8080"
+
+
 .\gradlew.bat :platform-api:run
 ```
 
-If you set a custom `NRC_DB_PASSWORD` in `.env`, replace the API password above with that same value.
+For machines using the default PostgreSQL port, change the database URL to `jdbc:postgresql://localhost:5432/nrc`. The API process does not automatically import `.env`; set the environment variables explicitly. Flyway applies versioned migrations at startup. When `NRC_DATABASE_URL` is absent, the API uses in-memory repositories and records are not durable. When `NRC_OBJECT_STORE_ENDPOINT` is absent, artifact upload/download endpoints return HTTP 503.
 
-Flyway applies the versioned SQL migrations at startup. When `NRC_DATABASE_URL` is absent, the API falls back to an in-memory repository and prints a warning; those records are not durable.
+The API creates the configured bucket at startup if it does not already exist. RustFS is the local development provider; the application uses the provider-neutral AWS SDK for Java v2 S3 API.
 
-## 3. Verify the API
+## 4. Verify the API
 
 In another PowerShell terminal:
 
@@ -47,11 +79,11 @@ Invoke-RestMethod http://127.0.0.1:8080/api/v1/health
 Invoke-RestMethod http://127.0.0.1:8080/api/v1/experiments
 ```
 
-Expected health response includes `status = ok`, `service = nrc-platform-api`, and `apiVersion = v1`.
+Expected health response includes `status = ok`, `service = nrc-platform-api` and `apiVersion = v1`.
 
-## 4. Run the desktop API-relay test
+## 5. Run the desktop API-relay test
 
-Keep the API running. Open a third terminal at the repository root:
+Keep the API running. Open another terminal at the repository root:
 
 ```powershell
 $env:NRC_API_BASE_URL = "http://127.0.0.1:8080"
@@ -59,76 +91,71 @@ $env:NRC_ROBOT_ID = "nrc-desktop-relay"
 .\gradlew.bat :composeApp:run
 ```
 
-The desktop client will:
-1. Generate clearly labelled synthetic simulator telemetry.
-2. POST each snapshot to the local API.
-3. Subscribe to the robot's WebSocket stream.
-4. Render the snapshots received back from the API.
+The desktop client generates clearly labelled synthetic simulator telemetry, POSTs each snapshot to the API, subscribes to the robot's WebSocket stream and renders the snapshots received back. The dashboard should show `API RELAY · SYNTHETIC ONLINE` and live event-camera, LiDAR, IMU and SNN panels. This is not a physical robot connection and does not enable actuation.
 
-The dashboard should show `API RELAY · SYNTHETIC ONLINE` and live event-camera, LiDAR, IMU and SNN panels. This verifies the desktop-to-API-to-desktop data path; it is not a real robot connection and does not enable actuation.
+## 6. Verify experiment, recording and artifact persistence
 
-To run the original standalone simulator UI instead, remove the API environment variables before launching:
-
-```powershell
-Remove-Item Env:NRC_API_BASE_URL -ErrorAction SilentlyContinue
-Remove-Item Env:NRC_ROBOT_ID -ErrorAction SilentlyContinue
-.\gradlew.bat :composeApp:run
-```
-
-## 5. Verify experiment runs and recording sessions
-
-Keep the API connected to PostgreSQL. In a new PowerShell terminal:
+First create and finalize an experiment recording using the API lifecycle endpoints. Artifacts can only be attached to a `FINALIZED` recording session. Run this script in PowerShell and keep the same session open so `$RecordingId` remains available:
 
 ```powershell
 $BaseUrl = "http://127.0.0.1:8080"
-
 $Experiment = Invoke-RestMethod -Method Post -Uri "$BaseUrl/api/v1/experiments" -ContentType "application/json" -Body (@{
-    name = "NRC lifecycle smoke test"
-    description = "Local API and PostgreSQL verification"
+    name = "NRC artifact smoke test"
+    description = "Local PostgreSQL and RustFS verification"
     scenario = "HEAVY_RAIN"
     sourceType = "SIMULATOR"
     sourceId = "nrc-local-simulator"
     modelIdentifier = "nrc-smoke-model"
     modelVersion = "0.1"
 } | ConvertTo-Json)
-
-$Run = Invoke-RestMethod -Method Post -Uri "$BaseUrl/api/v1/experiments/$($Experiment.id)/runs" -ContentType "application/json" -Body (@{
-    sourceRevision = "local-smoke"
-    configuration = @{ dataOrigin = "SYNTHETIC"; scenario = "HEAVY_RAIN" }
-} | ConvertTo-Json -Depth 8)
-
+$Run = Invoke-RestMethod -Method Post -Uri "$BaseUrl/api/v1/experiments/$($Experiment.id)/runs" -ContentType "application/json" -Body (@{ sourceRevision = "local-smoke" } | ConvertTo-Json)
 Invoke-RestMethod -Method Post -Uri "$BaseUrl/api/v1/runs/$($Run.id)/transition" -ContentType "application/json" -Body (@{ status = "RUNNING" } | ConvertTo-Json)
-
-$Recording = Invoke-RestMethod -Method Post -Uri "$BaseUrl/api/v1/runs/$($Run.id)/recordings" -ContentType "application/json" -Body (@{
-    format = "MCAP"
-    sourceId = "nrc-local-simulator"
-    metadata = @{ dataOrigin = "SYNTHETIC"; topicCount = 4 }
-} | ConvertTo-Json -Depth 8)
-
+$Recording = Invoke-RestMethod -Method Post -Uri "$BaseUrl/api/v1/runs/$($Run.id)/recordings" -ContentType "application/json" -Body (@{ format = "MCAP"; sourceId = "nrc-local-simulator"; metadata = @{ dataOrigin = "SYNTHETIC" } } | ConvertTo-Json -Depth 8)
 Invoke-RestMethod -Method Post -Uri "$BaseUrl/api/v1/recordings/$($Recording.id)/transition" -ContentType "application/json" -Body (@{ status = "RECORDING" } | ConvertTo-Json)
-
-Invoke-RestMethod -Method Post -Uri "$BaseUrl/api/v1/recordings/$($Recording.id)/transition" -ContentType "application/json" -Body (@{
-    status = "FINALIZED"
-    sampleCount = 120
-    metadata = @{ dataOrigin = "SYNTHETIC"; topicCount = 4 }
-} | ConvertTo-Json -Depth 8)
-
-Invoke-RestMethod -Method Post -Uri "$BaseUrl/api/v1/runs/$($Run.id)/transition" -ContentType "application/json" -Body (@{
-    status = "COMPLETED"
-    resultSummary = @{ frames = 120; dataOrigin = "SYNTHETIC" }
-} | ConvertTo-Json -Depth 8)
-
-Invoke-RestMethod "$BaseUrl/api/v1/runs/$($Run.id)"
-Invoke-RestMethod "$BaseUrl/api/v1/runs/$($Run.id)/recordings"
+Invoke-RestMethod -Method Post -Uri "$BaseUrl/api/v1/recordings/$($Recording.id)/transition" -ContentType "application/json" -Body (@{ status = "FINALIZED"; sampleCount = 120 } | ConvertTo-Json)
+$RecordingId = $Recording.id
 ```
 
-Expected: the run ends as `COMPLETED`, the recording session ends as `FINALIZED`, and both records are returned from PostgreSQL after an API restart.
+For a small artifact, calculate its SHA-256 and size in PowerShell:
 
-This verifies lifecycle metadata only. It does not upload an MCAP file; MinIO/S3 artifact upload is the next milestone.
+```powershell
+$SamplePath = Join-Path $env:TEMP "nrc-artifact-smoke.txt"
+[System.IO.File]::WriteAllText($SamplePath, "NRC artifact storage smoke test")
+$SampleSize = (Get-Item $SamplePath).Length
+$SampleHash = (Get-FileHash -Algorithm SHA256 $SamplePath).Hash.ToLowerInvariant()
+```
 
-## 6. Build the Android app
+Create an artifact upload intent, replacing `$RecordingId` with the finalized recording session UUID:
 
-The Android app currently uses the standalone simulator mode. From a separate terminal:
+```powershell
+$BaseUrl = "http://127.0.0.1:8080"
+$Intent = Invoke-RestMethod -Method Post -Uri "$BaseUrl/api/v1/recordings/$RecordingId/artifacts" -ContentType "application/json" -Body (@{
+    fileName = [System.IO.Path]::GetFileName($SamplePath)
+    contentType = "text/plain"
+    sizeBytes = $SampleSize
+    sha256Hex = $SampleHash
+} | ConvertTo-Json)
+
+Invoke-WebRequest -Method Put -Uri $Intent.uploadUrl -InFile $SamplePath -ContentType "text/plain" -UseBasicParsing
+
+$Verified = Invoke-RestMethod -Method Post -Uri "$BaseUrl/api/v1/artifacts/$($Intent.artifact.id)/complete" -ContentType "application/json" -Body "{}"
+$Verified
+
+$Download = Invoke-RestMethod -Method Post -Uri "$BaseUrl/api/v1/artifacts/$($Intent.artifact.id)/download-url"
+$DownloadedPath = Join-Path $env:TEMP "nrc-artifact-downloaded.txt"
+Invoke-WebRequest -Uri $Download.downloadUrl -OutFile $DownloadedPath -UseBasicParsing
+(Get-FileHash -Algorithm SHA256 $DownloadedPath).Hash.ToLowerInvariant() -eq $SampleHash
+```
+
+Expected: artifact status is `VERIFIED`, a download URL is returned, and the final hash comparison is `True`.
+
+Files up to 64 MiB use a presigned single PUT. Larger files use multipart upload: request a URL for each part, upload the part, retain its ETag, and submit the complete ordered part list to `POST /api/v1/artifacts/{artifactId}/complete`.
+
+The API verifies the actual object byte count and SHA-256 by streaming it from object storage. A failed integrity check marks the artifact `FAILED` and attempts to delete the uploaded object. A download URL is issued only for verified artifacts.
+
+## 7. Build the Android app
+
+The Android app currently uses standalone simulator mode:
 
 ```powershell
 .\gradlew.bat :androidApp:assembleDebug
@@ -136,20 +163,20 @@ The Android app currently uses the standalone simulator mode. From a separate te
 
 Expected result: `BUILD SUCCESSFUL`. The debug APK is normally generated under `androidApp/build/outputs/apk/debug/`.
 
-## 7. Stop PostgreSQL
+## 8. Stop local services
 
 ```powershell
 docker compose -f deploy/local/compose.yaml down
 ```
 
-Use `docker compose -f deploy/local/compose.yaml down -v` only when you intentionally want to delete the local NRC database volume and all local experiment records.
+This stops services but preserves named volumes. Do not use `down -v` unless you intentionally want to delete the local PostgreSQL database and all RustFS objects.
 
 ## Current limitations
 
-- This local service is not authenticated; it binds to localhost by default.
-- PostgreSQL stores experiment definitions, run metadata and recording-session metadata; raw MCAP/ROS bag/image/video files are not stored in PostgreSQL.
+- This local service is not authenticated; PostgreSQL and RustFS bind to localhost by default.
+- PostgreSQL stores experiment definitions, run/recording metadata and artifact registry records. Raw MCAP/ROS bag/image/video files are stored in S3-compatible object storage.
 - Live telemetry fan-out is in memory and is not durable.
-- Raw MCAP/ROS bag/image/video recordings are not uploaded yet; S3-compatible object storage is the next milestone.
+- Automatic cleanup of abandoned multipart uploads and object retention policies are not implemented yet.
 - The desktop API-relay mode uses synthetic telemetry to test the API path.
 - Android is not yet connected to the API.
-- Do not expose the API or database to a network until authentication, TLS, access controls and deployment hardening are implemented.
+- Do not expose the API, database or object store to a network until authentication, TLS, access controls and deployment hardening are implemented.

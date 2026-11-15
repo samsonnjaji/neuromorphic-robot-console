@@ -6,7 +6,7 @@ services:
     environment:
       POSTGRES_DB: nrc
       POSTGRES_USER: nrc
-      POSTGRES_PASSWORD: ${NRC_DB_PASSWORD:-nrc_local_dev_only}
+      POSTGRES_PASSWORD: ${NRC_DB_CREDENTIAL:?Set NRC_DB_CREDENTIAL in .env}
     ports:
       - "127.0.0.1:${NRC_POSTGRES_HOST_PORT:-5432}:5432"
     volumes:
@@ -16,6 +16,52 @@ services:
       interval: 5s
       timeout: 5s
       retries: 20
-
+  rustfs:
+    image: rustfs/rustfs:1.0.5
+    container_name: nrc-object-store
+    restart: unless-stopped
+    depends_on:
+      rustfs-volume-permissions:
+        condition: service_completed_successfully
+    environment:
+      RUSTFS_ACCESS_KEY: ${NRC_OBJECT_STORE_ACCESS_KEY:?Set NRC_OBJECT_STORE_ACCESS_KEY in .env}
+      RUSTFS_SECRET_KEY: ${NRC_OBJECT_STORE_SECRET_KEY:?Set NRC_OBJECT_STORE_SECRET_KEY in .env}
+      RUSTFS_VOLUMES: /data/rustfs{0...3}
+      RUSTFS_ADDRESS: 0.0.0.0:9000
+      RUSTFS_CONSOLE_ADDRESS: 0.0.0.0:9001
+      RUSTFS_CONSOLE_ENABLE: "true"
+      RUSTFS_UNSAFE_BYPASS_DISK_CHECK: "false"
+    ports:
+      - "127.0.0.1:${NRC_OBJECT_STORE_HOST_PORT:-9000}:9000"
+      - "127.0.0.1:${NRC_OBJECT_STORE_CONSOLE_HOST_PORT:-9001}:9001"
+    volumes:
+      - nrc-object-store-data-0:/data/rustfs0
+      - nrc-object-store-data-1:/data/rustfs1
+      - nrc-object-store-data-2:/data/rustfs2
+      - nrc-object-store-data-3:/data/rustfs3
+      - nrc-object-store-logs:/app/logs
+    healthcheck:
+      test: ["CMD", "sh", "-ec", "curl -fsS http://127.0.0.1:9000/health"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 40s
+  rustfs-volume-permissions:
+    image: alpine:3.21
+    container_name: nrc-object-store-volume-permissions
+    user: "0:0"
+    volumes:
+      - nrc-object-store-data-0:/data/rustfs0
+      - nrc-object-store-data-1:/data/rustfs1
+      - nrc-object-store-data-2:/data/rustfs2
+      - nrc-object-store-data-3:/data/rustfs3
+      - nrc-object-store-logs:/app/logs
+    command: ["sh","-ec","chown -R 10001:10001 /data/rustfs0 /data/rustfs1 /data/rustfs2 /data/rustfs3 /app/logs"]
+    restart: "no"
 volumes:
   nrc-postgres-data:
+  nrc-object-store-data-0:
+  nrc-object-store-data-1:
+  nrc-object-store-data-2:
+  nrc-object-store-data-3:
+  nrc-object-store-logs:
