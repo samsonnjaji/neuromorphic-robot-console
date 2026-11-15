@@ -6,15 +6,17 @@
 **Active development branch:** `feat/artifact-retention-cleanup`  
 **Artifact storage merge commit:** `3300de07779bc8c06329eeae97ee5c5ea8bca3ef`  
 **Merged feature PR:** [PR #14 — S3-compatible artifact storage and recording uploads](https://github.com/samsonnjaji/neuromorphic-robot-console/pull/14)  
-**Active cleanup branch commit:** `9c8b06341b5a31e90017b4c57e94f3447cb0399f`  
-**Cleanup push CI:** [Run 60](https://github.com/samsonnjaji/neuromorphic-robot-console/actions/runs/43713194842) — in progress at the last check.  
-**Cleanup PR:** to be opened after CI and documentation validation.
+**Active cleanup branch commit:** `08883f933d18322a151808ac6a1226f217ba9c99`  
+**Cleanup PR:** [PR #15 — expire abandoned artifact uploads and retry cleanup](https://github.com/samsonnjaji/neuromorphic-robot-console/pull/15)  
+**Push CI:** [Run 66 — success](https://github.com/samsonnjaji/neuromorphic-robot-console/actions/runs/43713949230)  
+**PR CI:** [Run 67 — success](https://github.com/samsonnjaji/neuromorphic-robot-console/actions/runs/43713953804)  
+**Security:** GitGuardian checks passed.
 
 ## 1. Instruction for the next ChatGPT session
 
 Continue in the existing repository. Do not restart architecture planning or ask the user to repeat decisions. First inspect the current `main` branch, active PR and latest GitHub Actions run; the remote repository is the source of truth.
 
-The user wants to be told explicitly when to pull the code onto their Windows PC and open it in Cursor. The earlier local gate is complete: Windows 11/JDK 17, Gradle 9.7, Android SDK, Docker engine through Ubuntu WSL, PostgreSQL exposed on host port 5435, API health/experiment CRUD, persistence across API restart, desktop REST/WebSocket relay and Android debug build. Artifact storage PR #14 is merged. The current branch adds abandoned-upload cleanup and Flyway V4; **the cleanup feature has not yet been merged or smoke-tested on the user's PC**. Do not ask the user to pull until Run 60 and PR #15 checks pass and the feature is merged. Then ask the user to pull the updated `main` branch and run the combined PostgreSQL V4/RustFS upload, download and cleanup smoke test.
+The user wants to be told explicitly when to pull the code onto their Windows PC and open it in Cursor. The earlier local gate is complete: Windows 11/JDK 17, Gradle 9.7, Android SDK, Docker engine through Ubuntu WSL, PostgreSQL exposed on host port 5435, API health/experiment CRUD, persistence across API restart, desktop REST/WebSocket relay and Android debug build. Artifact storage PR #14 is merged. The current branch adds abandoned-upload cleanup and Flyway V4; **the cleanup feature has not yet been merged or smoke-tested on the user's PC**. PR #15 push and pull-request CI plus GitGuardian checks have passed. Merge PR #15, then ask the user to pull the updated `main` branch and run the combined PostgreSQL V4/RustFS upload, download and cleanup smoke test.
 
 Keep this handoff and roadmap current after substantial milestones. Record commit SHAs, PR links, CI runs, implemented work, limitations and the next exact task. Never claim a test passed without checking its run.
 
@@ -67,7 +69,7 @@ No remote robot actuation in the initial release. Any later control plane needs 
 - RustFS local Compose service with persistent volumes and a non-root volume-permission helper; provider-neutral AWS SDK for Java v2.
 - Background artifact-maintenance worker tracks presigned URL expiry, marks abandoned pending uploads `ABORTED`, aborts multipart sessions, deletes stale objects and retries failed cleanup.
 - Failed integrity-check objects are eligible for retryable cleanup after their tracked upload URL expiry and grace period.
-- Artifact upload API is implemented on PR #14; push CI Run 33 passed. PR CI must pass before merge. Desktop/Android upload UI and real ROS 2 ingestion are not implemented.
+- Artifact upload API was merged in PR #14; push and PR CI passed, including PostgreSQL persistence, RustFS single/multipart upload, SHA-256 verification and Android build. PR #15 adds retryable cleanup for expired pending/failed uploads; Runs 66/67 passed. Desktop/Android upload UI and real ROS 2 ingestion are not implemented.
 - Docker Compose PostgreSQL service in `deploy/local/compose.yaml`.
 - PowerShell local startup and smoke-test guide in `deploy/local/README.md`.
 - PostgreSQL persistence integration tests, wired to the CI PostgreSQL service.
@@ -100,6 +102,9 @@ No remote robot actuation in the initial release. Any later control plane needs 
 - Run 21, documentation commit `a4f2b30`, passed the same full workflow.
 - Run 25, feature push commit `a5d6d59`, passed schema/OpenAPI validation, Compose validation, core/desktop/API tests, PostgreSQL lifecycle persistence integration and Android debug build.
 - Run 26, PR validation for PR #13, passed the same full workflow.
+- Run 62, cleanup implementation after SQL parameter correction, passed Kotlin/API tests, PostgreSQL migration/persistence/cleanup tests and Android debug build.
+- Run 66, final cleanup branch push including local setup documentation, passed the full workflow.
+- Run 67, PR #15 validation, passed the full workflow; GitGuardian Security Checks also passed.
 
 ## 4. Current limitations — do not misrepresent
 
@@ -117,7 +122,7 @@ No remote robot actuation in the initial release. Any later control plane needs 
 
 ## 5. Immediate next tasks
 
-1. Finish Run 60, open PR #15 for `feat/artifact-retention-cleanup`, and merge only after push, PR and security checks pass.
+1. Merge [PR #15](https://github.com/samsonnjaji/neuromorphic-robot-console/pull/15); push CI Run 66, PR CI Run 67 and GitGuardian checks are green.
 2. Tell the user to pull the merged `main` branch into Cursor. Preserve the existing local PostgreSQL volume and data; retain host port 5435 if native PostgreSQL still owns 5432.
 3. Run the combined Windows smoke test for Flyway V4, RustFS single-PUT upload, server-side SHA-256 verification, verified download and background cleanup startup.
 4. Fix local issues and update the handoff with the verified result.
