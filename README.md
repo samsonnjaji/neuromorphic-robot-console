@@ -30,8 +30,9 @@ The target architecture is staged. A planned component is not considered impleme
 - Versioned telemetry envelope and stream validation.
 - Environment Robustness Lab with deterministic synthetic stress profiles.
 - Versioned in-memory experiment manifest attached to stress-test reports.
-- Ktor Platform API MVP: health, experiment create/list/read, telemetry ingestion and WebSocket fan-out.
-- PostgreSQL repositories for experiment definitions, experiment runs and recording-session metadata, using HikariCP and Flyway migrations.
+- Ktor Platform API MVP: health, experiment/run/recording lifecycle, telemetry ingestion and WebSocket fan-out.
+- PostgreSQL repositories for experiment definitions, experiment runs, recording-session metadata and artifact metadata, using HikariCP and Flyway migrations.
+- S3-compatible artifact storage with RustFS locally, presigned single-part/multipart uploads, and server-side size/SHA-256 verification.
 - Persistent experiment-run lifecycle with source-revision/configuration provenance and validated state transitions.
 - Recording-session metadata lifecycle for MCAP, ROSBAG2, NRC_JSONL and other recording formats.
 - Local PostgreSQL Docker Compose configuration.
@@ -39,7 +40,7 @@ The target architecture is staged. A planned component is not considered impleme
 - OpenAPI 3.1 route documentation and JSON Schema contract validation in CI.
 - Gradle 9.7.0 wrapper for reproducible local builds.
 
-**Current limitations:** the API has no user/device authentication yet. It binds to localhost by default. PostgreSQL stores experiment definitions, experiment-run metadata and recording-session metadata; binary recording artifacts are not stored there. Live telemetry fan-out is in memory. Object storage, recording upload, ROS 2 gateway, inference workers and web client remain planned. Desktop API-relay mode is synthetic and read-only; it is not a real robot connection. Current robustness profiles are illustrative synthetic perturbations, not calibrated weather physics, measured model accuracy or safety certification.
+**Current limitations:** the API has no user/device authentication yet and binds to localhost by default. Artifact upload is available through the API, but is not yet integrated into the desktop/Android user interface or a real ROS 2 edge gateway. Live telemetry fan-out is in memory. The ROS 2 gateway, inference workers and web client remain planned. Desktop API-relay mode is synthetic and read-only; it is not a real robot connection. Current robustness profiles are illustrative synthetic perturbations, not calibrated weather physics, measured model accuracy or safety certification.
 
 ## Architecture and engineering plan
 
@@ -48,7 +49,7 @@ The target architecture is staged. A planned component is not considered impleme
 - [Session handoff / next-chat context](docs/SESSION_HANDOFF.md)
 - [Current application architecture](docs/ARCHITECTURE.md)
 - [Platform API reference](docs/api/README.md)
-- [Local PostgreSQL and desktop API-relay testing](deploy/local/README.md)
+- [Local PostgreSQL, RustFS object storage and desktop/API testing](deploy/local/README.md)
 - [ADR-001: Multi-client platform](docs/ADR/ADR-001-platform-boundaries.md)
 - [ADR-002: Versioned data contracts](docs/ADR/ADR-002-data-contracts.md)
 - [Product specification](docs/PRODUCT_SPEC.md)

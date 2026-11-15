@@ -1,6 +1,7 @@
 package com.samsonnjaji.nrc.api.model
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 import kotlinx.serialization.json.JsonObject
 
 @Serializable
@@ -97,6 +98,74 @@ data class TransitionRecordingSessionRequest(
     val sampleCount: Long? = null,
     val metadata: JsonObject? = null,
     val failureReason: String = ""
+)
+
+@Serializable
+data class CreateArtifactUploadRequest(
+    val fileName: String,
+    val contentType: String = "application/octet-stream",
+    val sizeBytes: Long,
+    val sha256Hex: String
+)
+
+@Serializable
+data class ArtifactRecord(
+    val id: String,
+    val recordingSessionId: String,
+    val status: String,
+    val uploadMode: String,
+    val fileName: String,
+    val contentType: String,
+    val sizeBytes: Long,
+    val sha256Hex: String,
+    val bucket: String,
+    val objectKey: String,
+    @Transient val multipartUploadId: String? = null,
+    val partSizeBytes: Long? = null,
+    val partCount: Int? = null,
+    val etag: String = "",
+    val failureReason: String = "",
+    val createdAtUnixMs: Long,
+    val verifiedAtUnixMs: Long? = null
+)
+
+@Serializable
+data class ArtifactUploadInitiatedResponse(
+    val artifact: ArtifactRecord,
+    val uploadUrl: String? = null,
+    val uploadMethod: String = "PUT",
+    val requiredHeaders: Map<String, String> = emptyMap(),
+    val partSizeBytes: Long? = null,
+    val partCount: Int? = null,
+    val uploadUrlExpiresAtUnixMs: Long? = null
+)
+
+@Serializable
+data class ArtifactPartUploadUrlResponse(
+    val artifactId: String,
+    val partNumber: Int,
+    val uploadUrl: String,
+    val uploadMethod: String = "PUT",
+    val requiredHeaders: Map<String, String> = emptyMap(),
+    val uploadUrlExpiresAtUnixMs: Long
+)
+
+@Serializable
+data class CompletedUploadPart(
+    val partNumber: Int,
+    val etag: String
+)
+
+@Serializable
+data class CompleteArtifactUploadRequest(
+    val parts: List<CompletedUploadPart> = emptyList()
+)
+
+@Serializable
+data class ArtifactDownloadUrlResponse(
+    val artifactId: String,
+    val downloadUrl: String,
+    val expiresAtUnixMs: Long
 )
 
 @Serializable

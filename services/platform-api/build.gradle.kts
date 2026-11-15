@@ -27,6 +27,9 @@ dependencies {
     implementation(libs.postgresql)
     implementation(libs.flyway.core)
     implementation(libs.flyway.database.postgresql)
+    implementation(libs.aws.s3)
+    implementation(libs.aws.auth)
+    implementation(libs.aws.apache.client)
 
     testImplementation(libs.ktor.server.test.host)
     testImplementation(libs.kotlin.test.junit)

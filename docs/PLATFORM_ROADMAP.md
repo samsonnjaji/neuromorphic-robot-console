@@ -46,17 +46,22 @@ This roadmap sequences platform work so that every phase produces a usable, test
 - [x] Complete desktop API-relay and Android build smoke tests on the user's Windows PC in Cursor (verified 2026-11-15; Docker engine accessed through Ubuntu WSL and PostgreSQL exposed on host port 5435).
 - [x] Add persistent experiment-run lifecycle and validated state transitions (PR #13; GitHub Actions Run 26 passed).
 - [x] Add recording-session metadata lifecycle and PostgreSQL persistence (PR #13; GitHub Actions Run 26 passed).
-- [ ] Add artifact registry, S3-compatible object storage and recording upload coordination.
+- [x] Add artifact registry, S3-compatible object storage and recording upload coordination.
+- [x] Add presigned single-part and multipart uploads with server-side size/SHA-256 verification.
+- [x] Add local RustFS Compose service and CI integration tests.
+- [ ] Add cleanup/retention policy for abandoned multipart uploads and stored artifacts.
 - [ ] Add authentication and device credentials.
 - [ ] Verify Android API integration after desktop behavior is validated.
 
-**Code verification:** implementation commit `65fbb6194a9dc03e8bebc09172aabee4dafab142`, [GitHub Actions Run 20](https://github.com/samsonnjaji/neuromorphic-robot-console/actions/runs/43696350093), passed. This includes wrapper checksum, OpenAPI/schema validation, Compose configuration, core/desktop/API tests, PostgreSQL persistence integration and Android debug build.
+**Local baseline verification:** the user completed Windows 11/JDK 17, PostgreSQL, API, desktop REST/WebSocket relay and Android debug build smoke tests on 2026-11-15.
 
-**Latest repository verification:** documentation/handoff commit `a4f2b30aceac95871d601f901c5034eb3874df2c`, [GitHub Actions Run 21](https://github.com/samsonnjaji/neuromorphic-robot-console/actions/runs/43696578541), also passed.
+**Experiment/recording lifecycle verification:** PR #13 was merged into main at `1c6dad8629a9d4df5029e3695c6a7fc9d533306b`; [GitHub Actions Run 25](https://github.com/samsonnjaji/neuromorphic-robot-console/actions/runs/43707369909) and [PR validation Run 26](https://github.com/samsonnjaji/neuromorphic-robot-console/actions/runs/43707445882) passed.
 
-**Current gate:** CI is green for the experiment-run and recording-session lifecycle. The next local Cursor smoke test should verify Flyway V2 against the user's existing PostgreSQL instance and exercise the new run/recording endpoints. Request this pull now, before beginning MinIO integration.
+**Artifact storage verification:** implementation commit `5099038d9a5cbb180f2d32681f28571ef9e89a1c`, [GitHub Actions Run 33](https://github.com/samsonnjaji/neuromorphic-robot-console/actions/runs/43710393113), passed OpenAPI/schema validation, Docker Compose validation, Kotlin tests, PostgreSQL artifact persistence, RustFS single/multipart upload and SHA-256 verification, and Android debug build.
 
-**Exit criteria:** initial local platform baseline and CI verification of persistent experiment runs/recording-session metadata are complete. Binary artifact storage and upload remain the next implementation milestone.
+**Current gate:** artifact storage has passed CI. The next local Cursor smoke test should apply Flyway V3 against the existing PostgreSQL volume, start RustFS without deleting any existing volumes, and verify a single-part upload/download round trip with matching SHA-256. The user's existing PostgreSQL host port is 5435 because native PostgreSQL owns 5432.
+
+**Exit criteria:** local RustFS upload/download and artifact metadata persistence are verified on the user's workstation. Then proceed to abandoned-upload cleanup, authentication/device credentials and real robotics data ingestion.
 
 ## Phase 3 — Edge and real data
 
