@@ -1,12 +1,11 @@
 # Start NRC
 
-NRC is Samson Sibona Njaji's individual KotlinConf project. The repository is now hosted at:
+NRC is Samson Sibona Njaji's long-term Kotlin Multiplatform robotics product, not only a KotlinConf submission.
 
+Repository:
 https://github.com/samsonnjaji/neuromorphic-robot-console
 
 ## 1. Get the source
-
-Clone the repository:
 
 ```bash
 git clone https://github.com/samsonnjaji/neuromorphic-robot-console.git
@@ -15,21 +14,26 @@ cd neuromorphic-robot-console
 
 Open the project folder in Android Studio. Use JDK 17 and allow Gradle to sync. The project uses Kotlin 2.4.21, Compose Multiplatform 1.12.2, Android Gradle Plugin 9.3.1 and Gradle 9.7.0.
 
-## 2. What currently works in the MVP
+For Android builds, install Android SDK Platform 37.0 and Build Tools 37.0.0. The app currently compiles against API 37 while targeting API 36.
+
+## 2. What currently works in the prototype
 
 - Simulated 10 Hz robot telemetry.
-- Event-camera activity view.
-- 2D LiDAR scan view.
-- IMU, pose, detection and inference metrics.
-- Simulated SNN layer activity.
-- Speed-limited simulated controls and emergency stop.
-- Mission capture and deterministic replay in memory.
+- Event-camera activity and 2D LiDAR scan views.
+- IMU, pose, detection, inference and SNN activity metrics.
+- Simulated speed guard and emergency stop.
+- Mission capture and deterministic in-memory replay.
+- Versioned telemetry envelope and stream validation.
+- Environment Robustness Lab with clear, rain, fog, low-light and dust/smoke profiles.
+- Deterministic synthetic perturbations for LiDAR returns, event samples, detection confidence and inference latency.
+
+The robustness profiles are illustrative software perturbations. They are not calibrated weather physics, measured model accuracy or safety certification.
 
 No physical robot is connected and no hardware motion commands are transmitted.
 
 ## 3. Run later on your PC
 
-The repository includes Gradle bootstrap scripts that download Gradle 9.7.0 and verify its official SHA-256 checksum before use.
+The repository includes Gradle bootstrap scripts that download Gradle 9.7.0 and verify its SHA-256 checksum before use.
 
 Windows PowerShell:
 
@@ -49,12 +53,12 @@ macOS / Linux:
 
 ## 4. Next engineering milestones
 
-1. Verify Gradle sync, shared tests and Android/Desktop builds.
-2. Add a versioned telemetry transport interface.
-3. Implement a local WebSocket test gateway.
-4. Build the ROS 2 adapter as a separate gateway process.
-5. Connect real event-camera, LiDAR and IMU feeds after protocol and safety review.
-6. Add persistent mission recordings and experiment export.
+1. Validate the robustness workflow against real adverse-weather and event-vision recordings.
+2. Add a versioned experiment manifest and reproducible report export.
+3. Implement a read-only WebSocket telemetry adapter.
+4. Build the ROS 2 gateway as a separate process.
+5. Compare conventional and spiking models on identical labelled inputs.
+6. Add hardware-specific latency, memory and power measurements.
 
 ## Safety
 

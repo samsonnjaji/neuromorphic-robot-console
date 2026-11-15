@@ -79,4 +79,14 @@ NRC must measure, rather than assume:
 - Reduction in repeated experiments and deployment regressions.
 - Research-team adoption, retention and willingness to pay.
 
+## References
+
+- Foxglove ROS 2 integration: https://docs.foxglove.dev/docs/getting-started/frameworks/ros2
+- Foxglove data platform: https://docs.foxglove.dev/docs/data
+- PlotJuggler: https://index.ros.org/p/plotjuggler/
+- InOrbit product: https://www.inorbit.ai/product
+- Formant platform: https://www.formant.ai/products
+- NVIDIA Isaac Sim: https://developer.nvidia.com/isaac/sim/
+- NeuroBench paper, Nature Communications (2025): https://www.nature.com/articles/s41467-025-56739-4
+
 The first release should be transparent about simulated versus measured data and should never imply safety certification.

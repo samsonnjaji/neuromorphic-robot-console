@@ -5,6 +5,7 @@ import com.samsonnjaji.nrc.domain.model.EventSample
 import com.samsonnjaji.nrc.domain.model.LidarPoint
 import com.samsonnjaji.nrc.domain.model.RobotTelemetry
 import kotlin.math.PI
+import kotlin.math.abs
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -34,8 +35,8 @@ class RobustnessEvaluatorTest {
         assertEquals(10, report.retainedLidarPoints)
         assertEquals(100, report.retainedEventSamples)
         assertEquals(0, report.addedNoiseEvents)
-        assertEquals(0.8f, report.meanConfidenceBefore)
-        assertEquals(0.8f, report.meanConfidenceAfter)
+        assertTrue(abs((report.meanConfidenceBefore ?: 0f) - 0.8f) < 0.0001f)
+        assertTrue(abs((report.meanConfidenceAfter ?: 0f) - 0.8f) < 0.0001f)
         assertEquals(10f, report.latencyAfterMs)
     }
 
