@@ -1,93 +1,49 @@
 # NRC — Neuromorphic Robotics Console
 
-**An observability, experiment-replay and safe-operation console for autonomous and neuromorphic robots.**
+**NRC is an evaluation and evidence platform for autonomous perception under adverse conditions.**
 
-NRC is an original Kotlin Multiplatform application led and maintained by **Samson Sibona Njaji**. It brings robot telemetry, event-camera activity, LiDAR scans, inertial measurements, AI perception outputs, safety state and mission replay into one research-oriented interface.
+It brings sensor observability, event-based perception, neuromorphic benchmarking, controlled environmental stress testing and reproducible experiment analysis into one workflow.
 
-> **Current status:** MVP implementation in progress. The deterministic simulator, dashboard, safety-limited simulated controls, SNN activity visualisation and in-memory mission recording/replay are implemented. The full Gradle/Android build has not yet been verified in this environment. NRC does not connect to or control physical hardware yet.
+## Why NRC?
 
-## What NRC does
+Robotics teams already have capable tools for visualization, simulation and fleet operations. NRC is not intended to replace those tools. Its focus is the evidence loop between environmental conditions, sensor quality, model behavior, robot decisions and reproducible failures.
 
-A robotics researcher can use NRC to:
+## Current prototype
 
-- Monitor robot connectivity, battery, velocity, pose and compute load.
-- Visualise sparse event-camera activity and 2D LiDAR range scans.
-- Inspect perception detections, confidence, bearing and inference latency.
-- Observe simulated spiking-network layer activity, firing rates and mean membrane potential.
-- Observe IMU readings and robot operating state.
-- Exercise simulated speed commands, pause/resume and emergency-stop behaviour.
-- Record a telemetry session and replay it deterministically for experiment review.
+- Kotlin Multiplatform shared application for Android and desktop.
+- Hardware-free robot telemetry simulator.
+- Event-camera and 2D LiDAR views.
+- IMU, pose, detection and SNN activity telemetry.
+- Simulated speed guard and emergency-stop state.
+- Bounded mission recording and timestamped replay.
+- Versioned telemetry envelope and stream validation.
+- Environment Robustness Lab with deterministic synthetic stress profiles.
 
-## Why it is different
+**Important:** the current robustness profiles are illustrative synthetic perturbations. They are not calibrated weather physics, measured model accuracy or safety certification.
 
-NRC is designed around **neuromorphic and event-driven robotics**, not just generic robot status cards. The application makes the perception-to-action pipeline observable: sensor events enter the system, perception produces detections, safety logic constrains commands, and the operator can inspect the resulting behaviour. Its initial demo runs without robot hardware or cloud credentials.
+## Product direction
 
-## Platforms and technology
+1. Import real ROS 2, MCAP and ROS bag recordings.
+2. Add validated adverse-weather and event-vision datasets.
+3. Compare conventional and spiking models on identical inputs.
+4. Capture ground-truth-aware perception metrics.
+5. Measure edge latency, memory, power and energy per inference.
+6. Produce reproducible reports with dataset/model/configuration provenance.
 
-- Kotlin Multiplatform and Compose Multiplatform.
-- Shared application UI and domain logic.
-- Android application (`androidApp`).
-- JVM desktop application (`composeApp`).
-- Kotlin Coroutines and StateFlow for telemetry state.
-- Hardware-independent telemetry models and bounded mission recording.
-- A planned ROS 2 gateway using a versioned WebSocket protocol.
+## Quick start
 
-## Repository structure
+See [START_HERE.md](START_HERE.md) for setup and run instructions.
 
-```text
-androidApp/                 Android application entry point
-composeApp/
-  src/commonMain/            Shared UI, domain models, simulator and mission recorder
-  src/commonTest/            Shared safety and mission-recorder tests
-  src/jvmMain/               Desktop application entry point
-docs/
-  PRODUCT_SPEC.md            Product definition and MVP scope
-  ARCHITECTURE.md            System architecture and data flow
-  SAFETY_MODEL.md            Safety boundaries and hardware integration principles
-  TELEMETRY_PROTOCOL.md      Versioned telemetry contract
-scripts/
-  gradle.ps1                 Verified Gradle bootstrap for Windows
-  gradle.sh                  Verified Gradle bootstrap for macOS/Linux
-```
+## Engineering documentation
 
-## Getting started
+- [Product specification](docs/PRODUCT_SPEC.md)
+- [Architecture](docs/ARCHITECTURE.md)
+- [Safety model](docs/SAFETY_MODEL.md)
+- [Telemetry protocol](docs/TELEMETRY_PROTOCOL.md)
+- [Environment Robustness Lab](docs/ROBUSTNESS_LAB.md)
+- [Market positioning](docs/MARKET_POSITIONING.md)
+- [Social impact and business model](docs/IMPACT_AND_BUSINESS_MODEL.md)
 
-Requirements:
+## Safety
 
-- JDK 17 or newer.
-- Android Studio with Kotlin Multiplatform support and Android SDK Platform 36 for Android builds.
-- Internet access on first build to download Gradle and dependencies.
-
-The repository includes a small Gradle bootstrap script. It downloads Gradle 9.7.0 and verifies the official SHA-256 checksum before running it.
-
-### Windows PowerShell
-
-```powershell
-.\scripts\gradle.ps1 :composeApp:run
-.\scripts\gradle.ps1 :composeApp:jvmTest
-.\scripts\gradle.ps1 :androidApp:assembleDebug
-```
-
-### macOS / Linux
-
-```bash
-./scripts/gradle.sh :composeApp:run
-./scripts/gradle.sh :composeApp:jvmTest
-./scripts/gradle.sh :androidApp:assembleDebug
-```
-
-The first command downloads Gradle 9.7.0 into `.tools/`. Subsequent runs reuse that verified local distribution.
-
-## Current MVP boundary
-
-The dashboard uses simulated telemetry. It is intentionally hardware-independent so the interface, domain model, safety behaviours and mission replay can be demonstrated without a robot. The simulator generates event-camera samples, 72-point LiDAR scans, IMU readings, pose, object detections, SNN layer activity, event rate and inference latency.
-
-Mission recording is currently in-memory and bounded to 3,600 frames. Persistence, ROS 2 transport, real event-camera/LiDAR ingestion and SNN runtime instrumentation are subsequent milestones.
-
-## Safety statement
-
-The UI-level safety envelope is a demonstration guard, not a certified safety system. A physical robot must enforce speed limits, watchdogs, emergency-stop handling and command validation independently on the robot/controller side. NRC must never be the only safety layer. The current application sends no physical robot commands.
-
-## Licence
-
-MIT. See [LICENSE](LICENSE).
+The current application is simulator-only. NRC is not a safety-rated controller. Physical robot commands remain disabled until independent controller-side limits, authentication, watchdogs and hardware emergency-stop requirements are implemented and tested.

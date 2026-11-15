@@ -28,8 +28,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.samsonnjaji.nrc.data.robustness.RobustnessLabState
 import com.samsonnjaji.nrc.domain.mission.MissionConsoleState
 import com.samsonnjaji.nrc.domain.model.RobotTelemetry
+import com.samsonnjaji.nrc.domain.robustness.EnvironmentScenario
+import com.samsonnjaji.nrc.presentation.robustness.RobustnessLabPanel
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -53,8 +56,14 @@ fun DashboardScreen(
     onStartRecording: () -> Unit,
     onStopRecording: () -> Unit,
     onReplayMission: () -> Unit,
-    onStopReplay: () -> Unit
+    onStopReplay: () -> Unit,
+    robustnessState: RobustnessLabState,
+    onScenarioSelected: (EnvironmentScenario) -> Unit,
+    onRunStressTest: () -> Unit,
+    onClearStressReport: () -> Unit
 ) {
+    val sensorTelemetry = robustnessState.latestReport?.stressedTelemetry ?: telemetry
+
     Column(
         modifier = Modifier.fillMaxSize().background(Background)
             .verticalScroll(rememberScrollState()).padding(20.dp),
@@ -76,24 +85,30 @@ fun DashboardScreen(
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
             MetricCard("BATTERY", telemetry.batteryPercent.toString() + "%", "Power system", Mint, Modifier.weight(1f))
             MetricCard("VELOCITY", format(telemetry.linearVelocityMps) + " m/s", "Linear speed", Blue, Modifier.weight(1f))
-            MetricCard("INFERENCE", format(telemetry.inferenceLatencyMs) + " ms", "Perception latency", Amber, Modifier.weight(1f))
-            MetricCard("EVENT RATE", (telemetry.eventRateHz / 1000).toString() + "k Hz", "Event stream", Mint, Modifier.weight(1f))
+            MetricCard("INFERENCE", format(telemetry.inferenceLatencyMs) + " ms", "Live simulator", Amber, Modifier.weight(1f))
+            MetricCard("EVENT RATE", (telemetry.eventRateHz / 1000).toString() + "k Hz", "Live event stream", Mint, Modifier.weight(1f))
         }
 
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-            PanelCard("EVENT CAMERA  /  640 × 480", Modifier.weight(1f)) {
-                EventView(telemetry)
+            PanelCard(
+                if (robustnessState.latestReport == null) "EVENT CAMERA  /  640 × 480" else "EVENT CAMERA  /  STRESS OUTPUT",
+                Modifier.weight(1f)
+            ) {
+                EventView(sensorTelemetry)
                 Text("Positive and negative brightness-change events", color = Muted, fontSize = 10.sp)
             }
-            PanelCard("LiDAR  /  360° SCAN", Modifier.weight(1f)) {
-                LidarView(telemetry)
-                Text("72-point simulated range scan • metres", color = Muted, fontSize = 10.sp)
+            PanelCard(
+                if (robustnessState.latestReport == null) "LiDAR  /  360° SCAN" else "LiDAR  /  STRESS OUTPUT",
+                Modifier.weight(1f)
+            ) {
+                LidarView(sensorTelemetry)
+                Text("Range returns after selected scenario perturbation", color = Muted, fontSize = 10.sp)
             }
         }
 
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
             PanelCard("PERCEPTION + SNN ACTIVITY", Modifier.weight(1f)) {
-                telemetry.detections.forEach { detection ->
+                sensorTelemetry.detections.forEach { detection ->
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                         horizontalArrangement = Arrangement.SpaceBetween
@@ -108,7 +123,7 @@ fun DashboardScreen(
                     }
                 }
                 Spacer(Modifier.height(5.dp))
-                telemetry.snnLayers.forEach { layer ->
+                sensorTelemetry.snnLayers.forEach { layer ->
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             Text(layer.layerName, color = White, fontSize = 11.sp)
@@ -133,9 +148,9 @@ fun DashboardScreen(
                 }
                 Spacer(Modifier.height(5.dp))
                 Text(
-                    "IMU  ax " + format(telemetry.imu.accelerationX) +
-                        "  ay " + format(telemetry.imu.accelerationY) +
-                        "  az " + format(telemetry.imu.accelerationZ) + " m/s²",
+                    "IMU  ax " + format(sensorTelemetry.imu.accelerationX) +
+                        "  ay " + format(sensorTelemetry.imu.accelerationY) +
+                        "  az " + format(sensorTelemetry.imu.accelerationZ) + " m/s²",
                     color = Muted,
                     fontSize = 10.sp
                 )
@@ -171,6 +186,13 @@ fun DashboardScreen(
                 Text("All commands are simulated. No physical robot is connected.", color = Muted, fontSize = 10.sp)
             }
         }
+
+        RobustnessLabPanel(
+            state = robustnessState,
+            onScenarioSelected = onScenarioSelected,
+            onRunTest = onRunStressTest,
+            onClearReport = onClearStressReport
+        )
 
         PanelCard("MISSION CAPTURE  /  DETERMINISTIC REPLAY", Modifier.fillMaxWidth()) {
             Text(

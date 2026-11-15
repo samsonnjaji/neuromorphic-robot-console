@@ -13,6 +13,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import com.samsonnjaji.nrc.data.demo.DemoTelemetryEngine
+import com.samsonnjaji.nrc.data.robustness.RobustnessLabEngine
 import com.samsonnjaji.nrc.presentation.dashboard.DashboardScreen
 
 private val NrcColors = darkColorScheme(
@@ -30,9 +31,11 @@ private val NrcColors = darkColorScheme(
 fun App() {
     MaterialTheme(colorScheme = NrcColors) {
         val engine = remember { DemoTelemetryEngine() }
+        val robustnessEngine = remember { RobustnessLabEngine() }
         val scope = rememberCoroutineScope()
         val telemetry by engine.telemetry.collectAsState()
         val missionState by engine.missionState.collectAsState()
+        val robustnessState by robustnessEngine.state.collectAsState()
 
         LaunchedEffect(engine) { engine.start(scope) }
 
@@ -50,7 +53,11 @@ fun App() {
                 onStartRecording = engine::startRecording,
                 onStopRecording = engine::stopRecording,
                 onReplayMission = { engine.replayMission(scope) },
-                onStopReplay = engine::stopReplay
+                onStopReplay = engine::stopReplay,
+                robustnessState = robustnessState,
+                onScenarioSelected = robustnessEngine::selectScenario,
+                onRunStressTest = { robustnessEngine.run(telemetry) },
+                onClearStressReport = robustnessEngine::clearReport
             )
         }
     }

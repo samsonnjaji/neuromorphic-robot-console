@@ -25,8 +25,14 @@ jobs:
         with:
           packages: 'platform-tools'
 
-      - name: Install Android platform
-        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+      - name: Install Android API 37
+        shell: bash
+        run: |
+          sdkmanager "platforms;android-37.0" "build-tools;37.0.0"
+          SDK_ROOT="${ANDROID_HOME:-${ANDROID_SDK_ROOT}}"
+          if [ -d "$SDK_ROOT/platforms/android-37.0" ] && [ ! -e "$SDK_ROOT/platforms/android-37" ]; then
+            ln -s android-37.0 "$SDK_ROOT/platforms/android-37"
+          fi
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
