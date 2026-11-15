@@ -136,7 +136,8 @@ class JdbcArtifactRepository(
             dataSource.connection.use { connection ->
                 connection.prepareStatement(LIST_CLEANUP_SQL).use { statement ->
                     statement.setLong(1, expiredBeforeUnixMs)
-                    statement.setInt(2, limit.coerceIn(1, 1_000))
+                    statement.setLong(2, expiredBeforeUnixMs)
+                    statement.setInt(3, limit.coerceIn(1, 1_000))
                     statement.executeQuery().use { resultSet ->
                         buildList {
                             while (resultSet.next()) add(resultSet.toArtifactRecord())
