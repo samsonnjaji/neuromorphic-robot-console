@@ -3,15 +3,15 @@
 **Last updated:** 2026-11-15  
 **Repository:** https://github.com/samsonnjaji/neuromorphic-robot-console  
 **Active branch:** `main`  
-**Current HEAD at handoff creation:** `65fbb6194a9dc03e8bebc09172aabee4dafab142`  
-**Latest CI:** [Run 20 — success](https://github.com/samsonnjaji/neuromorphic-robot-console/actions/runs/43696350093)  
-**Previous CI:** [Run 19 — success](https://github.com/samsonnjaji/neuromorphic-robot-console/actions/runs/43696269327).
+**Last verified implementation commit:** `65fbb6194a9dc03e8bebc09172aabee4dafab142`  
+**Implementation CI:** [Run 20 — success](https://github.com/samsonnjaji/neuromorphic-robot-console/actions/runs/43696350093)  
+**Last documentation commit before this handoff refresh:** `a4f2b30aceac95871d601f901c5034eb3874df2c`, [Run 21 — success](https://github.com/samsonnjaji/neuromorphic-robot-console/actions/runs/43696578541).
 
 ## 1. Instruction for the next ChatGPT session
 
-Continue work in the existing GitHub repository. Do not restart the architecture exercise and do not ask the user to repeat prior decisions. First read this file, then inspect the current `main` branch and the latest GitHub Actions run. The remote repository is the source of truth.
+Continue work in the existing GitHub repository. Do not restart the architecture exercise and do not ask the user to repeat prior decisions. First read this file, then inspect the current `main` branch and the latest GitHub Actions run. The remote repository is the source of truth. The handoff itself may be updated by later documentation commits; always verify the current branch head and latest run before acting.
 
-The user wants to be told explicitly when to pull the code onto their Windows PC and open it in Cursor for application testing. **The local testing gate is now met:** the latest main commit has green CI, the Gradle wrapper is included and verified, Docker Compose configuration passes validation, and local PowerShell instructions are committed. The next action is to tell the user to pull and run the desktop API-relay and Android build smoke tests.
+The user wants to be told explicitly when to pull the code onto their Windows PC and open it in Cursor for application testing. **The local testing gate is met:** the latest implementation CI is green, the Gradle wrapper is included and verified, Docker Compose configuration passes validation, and local PowerShell instructions are committed. The next action is to tell the user to pull and run the desktop API-relay and Android build smoke tests.
 
 Keep this handoff file current after each substantial milestone. Record commit SHAs, CI run links, implemented work, known issues and the next exact task. Do not claim tests passed without checking the run.
 
@@ -84,6 +84,7 @@ No remote robot actuation in the initial release. Any later control plane needs 
 - Run 18, commit `5037fd0`, passed the full workflow including Docker Compose config validation.
 - Run 19, commit `d198efb`, passed the full workflow including Gradle wrapper checksum and Compose validation.
 - Run 20, commit `65fbb61`, passed the full workflow using the checked-in Gradle wrapper: wrapper checksum, JSON Schema/OpenAPI validation, Docker Compose configuration, core tests, desktop compile, API tests, PostgreSQL persistence integration and Android debug build.
+- Run 21, documentation commit `a4f2b30`, passed the same full workflow.
 
 ## 4. Current limitations — do not misrepresent
 

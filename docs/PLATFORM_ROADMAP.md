@@ -48,7 +48,9 @@ This roadmap sequences platform work so that every phase produces a usable, test
 - [ ] Add authentication and device credentials.
 - [ ] Verify Android API integration after desktop behavior is validated.
 
-**CI verification:** commit `65fbb6194a9dc03e8bebc09172aabee4dafab142`, [GitHub Actions Run 20](https://github.com/samsonnjaji/neuromorphic-robot-console/actions/runs/43696350093), passed. This includes wrapper checksum, OpenAPI/schema validation, Compose configuration, core/desktop/API tests, PostgreSQL persistence integration and Android debug build.
+**Code verification:** implementation commit `65fbb6194a9dc03e8bebc09172aabee4dafab142`, [GitHub Actions Run 20](https://github.com/samsonnjaji/neuromorphic-robot-console/actions/runs/43696350093), passed. This includes wrapper checksum, OpenAPI/schema validation, Compose configuration, core/desktop/API tests, PostgreSQL persistence integration and Android debug build.
+
+**Latest repository verification:** documentation/handoff commit `a4f2b30aceac95871d601f901c5034eb3874df2c`, [GitHub Actions Run 21](https://github.com/samsonnjaji/neuromorphic-robot-console/actions/runs/43696578541), also passed.
 
 **Current gate:** ready for the first local Cursor smoke test. The user has not yet pulled the repository.
 
