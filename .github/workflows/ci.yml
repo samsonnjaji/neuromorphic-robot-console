@@ -43,6 +43,9 @@ jobs:
       - name: Validate versioned API contracts
         run: python scripts/validate_schemas.py
 
+      - name: Validate local Docker Compose configuration
+        run: docker compose -f deploy/local/compose.yaml config --quiet
+
       - name: Set up Java
         uses: actions/setup-java@v4
         with:

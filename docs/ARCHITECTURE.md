@@ -56,20 +56,27 @@ The `RobustnessLabEngine` in `nrc-core` applies a selected `EnvironmentScenario`
 
 The Ktor API is a separate JVM process. It exposes experiment metadata routes and a read-only telemetry ingest/stream path. When `NRC_DATABASE_URL` and database credentials are configured, the application creates a HikariCP connection pool, applies Flyway migrations and uses `JdbcExperimentRepository` for durable experiment metadata. When no database URL is configured, it explicitly falls back to an in-memory repository for local development and tests.
 
-Telemetry ingestion is validated by `TelemetryStreamGuard` for schema version, message type, robot identity, sequence and timestamp. Accepted snapshots are published through a bounded in-memory `TelemetryHub` to connected WebSocket subscribers. This live stream is not a durable recording store.
+Telemetry ingestion is validated by `TelemetryStreamGuard` for schema version, message type, robot identity, matching envelope/payload sequence and timestamp. Accepted snapshots are published through a bounded in-memory `TelemetryHub` to connected WebSocket subscribers. This live stream is not a durable recording store.
+
+## Desktop API relay test mode
+
+The default desktop launch uses the standalone simulator, preserving the original interactive controls and mission recording. If `NRC_API_BASE_URL` is set, the JVM desktop entry point creates `ApiRelayTelemetrySource`. That source runs the synthetic demo engine, publishes each snapshot to `POST /api/v1/robots/{robotId}/telemetry`, then consumes the corresponding WebSocket stream. The dashboard displays the received telemetry in a read-only mode with the explicit label `API RELAY · SYNTHETIC`.
+
+This mode validates the desktop → REST API → WebSocket → desktop path. It is not a real robot connection, and it does not enable actuation. Android currently remains in standalone simulator mode.
 
 ## Current code layout
 
 - `core/nrc-core`: independent Kotlin Multiplatform domain models, telemetry validation, safety-envelope logic, mission recording, robustness evaluation, transport interfaces and core tests.
-- `composeApp`: shared Compose presentation, dashboard, simulator source and current application wiring; also provides the JVM desktop entry point.
+- `composeApp`: shared Compose presentation, dashboard, simulator source and current application wiring; JVM desktop entry point and API relay source.
 - `androidApp`: Android-specific application shell that consumes `composeApp`.
 - `services/platform-api`: Ktor service, experiment repository abstraction, in-memory and PostgreSQL repositories, telemetry fan-out, Flyway migrations and API tests.
 - `deploy/local`: local PostgreSQL Compose configuration and PowerShell instructions.
+- `docs/api`: OpenAPI 3.1 document and API reference.
 - `schemas`: versioned JSON contracts and positive/negative fixtures.
-- `scripts`: schema validation utility.
+- `scripts`: schema and OpenAPI validation utility.
 
 ## Not yet implemented
 
-Authentication, tenant boundaries, S3-compatible object storage, recording upload, desktop-to-API integration, ROS 2 gateway, Python inference runtime and web client remain planned. See [PLATFORM_ARCHITECTURE.md](PLATFORM_ARCHITECTURE.md), [PLATFORM_ROADMAP.md](PLATFORM_ROADMAP.md) and [SESSION_HANDOFF.md](SESSION_HANDOFF.md).
+Authentication, tenant boundaries, S3-compatible object storage, recording upload, Android API integration, ROS 2 gateway, Python inference runtime and web client remain planned. See [PLATFORM_ARCHITECTURE.md](PLATFORM_ARCHITECTURE.md), [PLATFORM_ROADMAP.md](PLATFORM_ROADMAP.md) and [SESSION_HANDOFF.md](SESSION_HANDOFF.md).
 
 The first edge gateway is read-only. Any future motion-command channel requires a separate safety architecture and independent validation.

@@ -3,15 +3,15 @@
 **Last updated:** 2026-11-15  
 **Repository:** https://github.com/samsonnjaji/neuromorphic-robot-console  
 **Active branch:** `main`  
-**Current HEAD at handoff creation:** `c202f4bde5cf21de0691ab538f7761c91162f98d`  
-**Current CI run:** [Run 15 — PostgreSQL integration](https://github.com/samsonnjaji/neuromorphic-robot-console/actions/runs/43694820872)  
-**Previous verified commit:** `511c9b3ae4cfa128f0e0aaa9db5fe82d99cd6275`, [Run 14 — success](https://github.com/samsonnjaji/neuromorphic-robot-console/actions/runs/43694528000).
+**Current HEAD at handoff creation:** `1cc677c16ad698e7a6c87965801772e530c34fde`  
+**Current CI run:** [Run 17 — desktop API relay](https://github.com/samsonnjaji/neuromorphic-robot-console/actions/runs/43695557278)  
+**Previous fully verified commit:** `a3c8aa9a5b935bcdebeda077c641829e1826fd77`, [Run 16 — success](https://github.com/samsonnjaji/neuromorphic-robot-console/actions/runs/43695021846).
 
 ## 1. Instruction for the next ChatGPT session
 
 Continue work in the existing GitHub repository. Do not restart the architecture exercise and do not ask the user to repeat prior decisions. First read this file, then inspect the current `main` branch and the latest GitHub Actions run. The remote repository is the source of truth.
 
-The user wants to be told explicitly when to pull the code onto their Windows PC and open it in Cursor for application testing. **Do not ask for a local pull yet** unless the current main commit has green CI, local run instructions are complete, and there is a concrete app/API test task that needs the user's machine. The user should not be asked to test a known-broken or incomplete build.
+The user wants to be told explicitly when to pull the code onto their Windows PC and open it in Cursor for application testing. Do not ask for a local pull until the current main commit has green CI, local run instructions are complete, and there is a concrete app/API test task that needs the user's machine. The user has not yet been asked to pull this desktop API-relay increment.
 
 Keep this handoff file current after each substantial milestone. Record commit SHAs, CI run links, implemented work, known issues and the next exact task. Do not claim tests passed without checking the run.
 
@@ -37,12 +37,14 @@ No remote robot actuation in the initial release. Any later control plane needs 
 - Independent `core/nrc-core` Kotlin Multiplatform module.
 - Moved telemetry/domain models, stream guard, safety envelope, mission recording, robustness evaluator and related tests out of the Compose application module.
 - Core has no Compose, database, network-client or ROS 2 dependency.
+- Stream guard rejects envelope/payload sequence mismatches.
 
 ### Data contracts
 - Versioned telemetry envelope and experiment manifest JSON Schemas.
 - Positive and negative JSON fixtures.
 - `scripts/validate_schemas.py`.
-- GitHub Actions schema validation.
+- OpenAPI 3.1 document in `docs/api/openapi.json`, with external reference to the telemetry envelope schema.
+- CI validates JSON schemas, fixtures, OpenAPI paths and referenced local schemas.
 
 ### Platform API MVP
 - Ktor service in `services/platform-api`.
@@ -57,9 +59,20 @@ No remote robot actuation in the initial release. Any later control plane needs 
 - PowerShell local startup and smoke-test guide in `deploy/local/README.md`.
 - PostgreSQL persistence integration test, wired to CI PostgreSQL service.
 
+### Desktop API relay
+- Common `NrcTelemetrySource` interface.
+- Existing simulator implements the interface and remains the default mode.
+- Desktop-only `ApiRelayTelemetrySource` uses Ktor CIO client.
+- With `NRC_API_BASE_URL` configured, desktop publishes synthetic simulator telemetry to the API and consumes the same telemetry from the WebSocket.
+- API relay dashboard is explicitly labelled `API RELAY · SYNTHETIC` and read-only.
+- Android remains in standalone simulator mode.
+- Local PowerShell instructions are in `deploy/local/README.md`.
+
 ### CI
-- Run 14, commit `511c9b3`, passed schema validation, core tests, desktop compile and API tests, and Android build.
-- Run 15, commit `c202f4b`, adds PostgreSQL persistence, migration and DB integration test. Its result must be checked before claiming this work is verified.
+- Run 14, commit `511c9b3`, passed schema validation, core tests, desktop compile, API tests and Android build.
+- Run 15, commit `c202f4b`, passed PostgreSQL persistence, core/desktop/API tests and Android build.
+- Run 16, commit `a3c8aa9`, passed the full workflow.
+- Run 17, commit `1cc677c`, desktop API-relay/OpenAPI integration. Core, desktop compilation, API tests, PostgreSQL integration and schema/OpenAPI validation passed; Android build passed and runner cleanup was still in progress when this handoff was written. Check the final run conclusion before proceeding.
 
 ## 4. Current limitations — do not misrepresent
 
@@ -68,29 +81,30 @@ No remote robot actuation in the initial release. Any later control plane needs 
 - PostgreSQL stores experiment metadata only.
 - Telemetry WebSocket fan-out is in memory, not durable.
 - No S3-compatible object storage or recording upload.
-- Desktop and Android are not yet connected to the Platform API.
+- Desktop API relay mode uses synthetic telemetry; no real robot is connected.
+- Android API integration is not implemented.
 - No web client, ROS 2 gateway or Python inference runtime yet.
 - Robustness Lab profiles are deterministic synthetic perturbations, not calibrated weather physics or measured model accuracy.
 - NRC is not a safety-rated robot controller.
 
 ## 5. Immediate next tasks
 
-1. Check Run 15. Fix any Gradle, Flyway, PostgreSQL or integration-test failures before adding more scope.
-2. Verify `docker compose -f deploy/local/compose.yaml config` and the PowerShell instructions.
-3. Add a versioned OpenAPI specification for the implemented API routes.
-4. Add a desktop API client in a small isolated change. Keep the simulator as an explicit demo source and make API mode selectable; do not silently remove existing simulator functionality.
-5. Connect desktop to the API and display live telemetry/experiment records.
-6. Only then ask the user to pull the repository into Cursor for a concrete desktop/API test.
-7. After local test feedback, proceed to recording/object storage, auth/device identity, ROS 2 gateway and inference runtime.
+1. Check Run 17 final conclusion. Fix any CI issue before local testing.
+2. Validate the latest `deploy/local/compose.yaml` config in CI and ensure `.env` is gitignored.
+3. Update the roadmap, architecture and handoff with the final verified commit.
+4. If all CI checks pass, tell the user to pull `main` into Cursor for the desktop API-relay and Android build smoke tests. Give exact PowerShell commands from `deploy/local/README.md`.
+5. Ask the user to confirm the desktop dashboard shows `API RELAY · SYNTHETIC ONLINE`, the event/LiDAR/SNN panels update, and no API errors appear.
+6. After local feedback, proceed with S3-compatible object storage and recording upload, then authentication/device identity.
+7. Keep Android API integration, ROS 2 gateway, Python inference runtime and web client in later milestones.
 
 ## 6. Local test gate — when to involve the user
 
 Before asking the user to pull:
 - Latest `main` GitHub Actions run is green, including core tests, desktop compile, API tests, PostgreSQL persistence integration and Android debug build.
 - Docker Compose configuration is valid.
-- Local database/API run steps are committed and have been checked against the actual code.
-- The desktop API integration exists or the user is specifically being asked to test a standalone API milestone.
-- Provide exact PowerShell commands, expected outputs and the one thing to inspect in Cursor.
+- Local database/API/desktop run steps are committed.
+- The desktop API-relay mode is present.
+- Provide exact PowerShell commands, expected UI status and the one thing to inspect in Cursor.
 
 When ready, say plainly: **“The build is green. Now pull the latest main branch and open it in Cursor; we are ready for local testing.”**
 
@@ -98,13 +112,14 @@ When ready, say plainly: **“The build is green. Now pull the latest main branc
 
 - `docs/PLATFORM_ARCHITECTURE.md` — target and current architecture.
 - `docs/PLATFORM_ROADMAP.md` — milestones and completion state.
-- `docs/ARCHITECTURE.md` — current implementation details.
 - `docs/SESSION_HANDOFF.md` — this file; next-chat continuity.
+- `docs/ARCHITECTURE.md` — current implementation details.
+- `docs/api/openapi.json` — versioned REST and WebSocket API reference.
 - `docs/ADR/ADR-001-platform-boundaries.md` — platform boundaries.
 - `docs/ADR/ADR-002-data-contracts.md` — versioned data contracts.
 - `schemas/` — wire schemas and fixtures.
 - `services/platform-api/` — backend.
-- `deploy/local/README.md` — local PostgreSQL/API run instructions.
+- `deploy/local/README.md` — local PostgreSQL/API/desktop run instructions.
 
 ## 8. Working rules
 

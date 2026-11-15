@@ -11,7 +11,9 @@ docker compose -f deploy/local/compose.yaml up -d postgres
 docker compose -f deploy/local/compose.yaml ps
 ```
 
-The local-only default password is `nrc_local_dev_only`. Override it by setting `NRC_DB_PASSWORD` before starting Compose. Do not reuse this development password outside a local workstation.
+The local-only default password is `nrc_local_dev_only`. For a custom local password, copy `.env.example` to `.env`, set `NRC_DB_PASSWORD`, and use the same value in the API terminal. The root `.env` file is ignored by Git.
+
+Do not reuse a development password outside a local workstation.
 
 ## 2. Run the API from PowerShell
 
@@ -25,6 +27,8 @@ $env:NRC_API_HOST = "127.0.0.1"
 $env:NRC_API_PORT = "8080"
 gradle :platform-api:run
 ```
+
+If you set a custom `NRC_DB_PASSWORD` in `.env`, replace the API password above with that same value.
 
 Flyway applies the versioned SQL migrations at startup. When `NRC_DATABASE_URL` is absent, the API falls back to an in-memory repository and prints a warning; those records are not durable.
 
@@ -65,7 +69,17 @@ Remove-Item Env:NRC_ROBOT_ID -ErrorAction SilentlyContinue
 gradle :composeApp:run
 ```
 
-## 5. Stop PostgreSQL
+## 5. Build the Android app
+
+The Android app currently uses the standalone simulator mode. From a separate terminal:
+
+```powershell
+gradle :androidApp:assembleDebug
+```
+
+Expected result: `BUILD SUCCESSFUL`. The debug APK is normally generated under `androidApp/build/outputs/apk/debug/`.
+
+## 6. Stop PostgreSQL
 
 ```powershell
 docker compose -f deploy/local/compose.yaml down
@@ -80,4 +94,5 @@ Use `docker compose -f deploy/local/compose.yaml down -v` only when you intentio
 - Live telemetry fan-out is in memory and is not durable.
 - Raw MCAP/ROS bag/image/video recordings are not stored in PostgreSQL.
 - The desktop API-relay mode uses synthetic telemetry to test the API path.
+- Android is not yet connected to the API.
 - Do not expose the API or database to a network until authentication, TLS, access controls and deployment hardening are implemented.

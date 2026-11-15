@@ -10,7 +10,7 @@ NRC is one platform with shared experiment contracts and multiple clients:
 
 - **Android:** field monitoring, alerts and experiment review.
 - **Desktop:** engineering console, sensor visualisation, replay and analysis.
-- **Web:** team collaboration, experiment registry and report review.
+- **Web:** team collaboration, experiment registry and report review (planned).
 - **Shared core:** common domain models, validation, scenario logic and experiment metrics.
 - **Platform API:** experiment metadata, telemetry ingestion and live stream distribution.
 - **Edge gateway:** read-only ROS 2, MCAP and ROS bag connectivity (planned).
@@ -31,30 +31,34 @@ The target architecture is staged. A planned component is not considered impleme
 - Environment Robustness Lab with deterministic synthetic stress profiles.
 - Versioned in-memory experiment manifest attached to stress-test reports.
 - Ktor Platform API MVP: health, experiment create/list/read, telemetry ingestion and WebSocket fan-out.
-- PostgreSQL experiment metadata repository, Flyway migration and local Docker Compose database.
-- GitHub Actions validation for JSON schemas, Kotlin core, desktop, API and Android builds.
+- PostgreSQL experiment metadata repository, HikariCP connection pooling and Flyway migration.
+- Local PostgreSQL Docker Compose configuration.
+- Desktop API-relay mode that publishes synthetic telemetry through the API and reads it back over WebSocket.
+- OpenAPI 3.1 route documentation and JSON Schema contract validation in CI.
 
-**Current limitations:** the API has no user/device authentication yet. It binds to localhost by default. PostgreSQL stores experiment metadata only; live telemetry fan-out is in memory. Object storage, recording upload, ROS 2 gateway, inference workers and web client remain planned. Current robustness profiles are illustrative synthetic perturbations, not calibrated weather physics, measured model accuracy or safety certification.
+**Current limitations:** the API has no user/device authentication yet. It binds to localhost by default. PostgreSQL stores experiment metadata only; live telemetry fan-out is in memory. Object storage, recording upload, ROS 2 gateway, inference workers and web client remain planned. Desktop API-relay mode is synthetic and read-only; it is not a real robot connection. Current robustness profiles are illustrative synthetic perturbations, not calibrated weather physics, measured model accuracy or safety certification.
 
 ## Architecture and engineering plan
 
 - [Platform architecture](docs/PLATFORM_ARCHITECTURE.md)
 - [Platform implementation roadmap](docs/PLATFORM_ROADMAP.md)
 - [Session handoff / next-chat context](docs/SESSION_HANDOFF.md)
+- [Current application architecture](docs/ARCHITECTURE.md)
+- [Platform API reference](docs/api/README.md)
+- [Local PostgreSQL and desktop API-relay testing](deploy/local/README.md)
 - [ADR-001: Multi-client platform](docs/ADR/ADR-001-platform-boundaries.md)
 - [ADR-002: Versioned data contracts](docs/ADR/ADR-002-data-contracts.md)
 - [Product specification](docs/PRODUCT_SPEC.md)
-- [Current application architecture](docs/ARCHITECTURE.md)
 - [Environment Robustness Lab](docs/ROBUSTNESS_LAB.md)
 - [Market positioning](docs/MARKET_POSITIONING.md)
 - [Social impact and business model](docs/IMPACT_AND_BUSINESS_MODEL.md)
 - [Start guide](START_HERE.md)
-- [Local PostgreSQL development](deploy/local/README.md)
 
 ## Versioned contracts
 
 - [Telemetry envelope v1](schemas/telemetry-envelope.v1.schema.json)
 - [Experiment manifest v1](schemas/experiment-manifest.v1.schema.json)
+- [OpenAPI 3.1](docs/api/openapi.json)
 
 ## Safety
 
