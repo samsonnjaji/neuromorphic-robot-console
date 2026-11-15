@@ -1,17 +1,18 @@
 # NRC Telemetry Protocol (Design Draft)
 
-This document defines the first transport contract for the future ROS 2 gateway. It is a design draft; the current MVP uses the in-process simulator and does not open a network socket.
+This document defines the application-level contract for the future ROS 2 gateway. The current MVP uses the in-process simulator and does not open a network socket.
 
-## Transport
+## Transport boundary
 
-- WebSocket over TLS (`wss://`) for remote or networked robot sessions.
-- JSON envelope for the first integration; binary payloads may be introduced for high-rate event-camera data.
-- The gateway is responsible for translating ROS 2 messages into NRC's stable application schema.
+- WebSocket over TLS (`wss://`) is the intended transport for networked robot sessions.
+- JSON is the first wire format; binary payloads may be introduced for high-rate event-camera data.
+- A separate gateway translates ROS 2 messages into NRC's stable application schema.
 - The shared Kotlin application must not depend directly on ROS 2 middleware.
+- The Kotlin `TelemetryTransport` interface separates transport lifecycle from UI and domain logic.
 
 ## Message envelope
 
-Every message includes:
+Every telemetry message includes:
 
 ```json
 {
@@ -24,13 +25,25 @@ Every message includes:
 }
 ```
 
-`sequence` is monotonically increasing per robot stream. `timestampUnixMs` is the source timestamp, not the client receive time. The client records receive time separately for latency diagnostics.
+The shared model is `TelemetryEnvelope`. The gateway decodes the wire payload into a typed `RobotTelemetry` before publishing it to the application.
+
+- `schemaVersion` must match a version supported by the client.
+- `messageType` identifies the envelope purpose.
+- `robotId` must match the robot selected for the session.
+- `sequence` is monotonically increasing per robot stream.
+- `timestampUnixMs` is the source timestamp, not the client receive time.
+
+## Validation before state update
+
+`TelemetryStreamGuard` rejects unsupported schema versions, unsupported message types, mismatched robot IDs, invalid timestamps, and duplicate or out-of-order sequence numbers. A new guard is created for each robot connection. The last accepted sequence advances only when an envelope passes validation.
+
+The guard is a data-integrity check, not a security boundary. Network authentication, authorisation, TLS configuration and payload validation remain responsibilities of the gateway and transport implementation.
 
 ## Telemetry snapshot payload
 
-The first payload groups data into the following domains:
+The first payload groups data into these domains:
 
-- `state`: connection, battery, operating mode, mission state.
+- `state`: connection, battery, operating mode and mission state.
 - `motion`: odometry pose, linear/angular velocity and IMU.
 - `sensors.eventCamera`: dimensions, event timestamp window and event samples.
 - `sensors.lidar`: frame, angular increment and range samples.
@@ -40,7 +53,7 @@ The first payload groups data into the following domains:
 
 Units must be explicit in field names or schema documentation. Angles use radians internally unless a field name explicitly states degrees.
 
-## Command request (future; disabled in current MVP)
+## Future command request (disabled in current MVP)
 
 ```json
 {
