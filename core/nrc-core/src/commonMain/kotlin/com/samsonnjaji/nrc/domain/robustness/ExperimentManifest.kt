@@ -1,5 +1,8 @@
 package com.samsonnjaji.nrc.domain.robustness
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 enum class ExperimentSourceType {
     SIMULATOR,
     ROS2_LIVE,
@@ -13,6 +16,7 @@ enum class ExperimentSourceType {
  * Provenance record for a robustness run.
  * sourceTimestampMs is source time; in the current simulator it is simulation time.
  */
+@Serializable
 data class ExperimentManifest(
     val manifestVersion: Int = 1,
     val experimentId: String,

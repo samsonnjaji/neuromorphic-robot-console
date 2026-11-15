@@ -50,8 +50,8 @@ jobs:
         with:
           gradle-version: '9.7.0'
 
-      - name: Run core and desktop JVM tests
-        run: gradle :nrc-core:jvmTest :composeApp:jvmTest :composeApp:compileKotlinJvm
+      - name: Run core, desktop and platform API tests
+        run: gradle :nrc-core:jvmTest :composeApp:jvmTest :composeApp:compileKotlinJvm :platform-api:test
 
       - name: Build Android application
         run: gradle :androidApp:assembleDebug

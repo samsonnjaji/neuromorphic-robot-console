@@ -1,8 +1,10 @@
 package com.samsonnjaji.nrc.domain.robustness
 
 import com.samsonnjaji.nrc.domain.model.RobotTelemetry
+import kotlinx.serialization.Serializable
 import kotlin.math.roundToInt
 
+@Serializable
 data class StressTestReport(
     val manifest: ExperimentManifest,
     val scenario: EnvironmentScenario,

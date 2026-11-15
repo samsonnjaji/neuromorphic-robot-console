@@ -1,5 +1,7 @@
 package com.samsonnjaji.nrc.domain.robustness
 
+import kotlinx.serialization.Serializable
+
 /**
  * Deterministic stress profiles for the first NRC robustness-lab prototype.
  *
@@ -7,6 +9,7 @@ package com.samsonnjaji.nrc.domain.robustness
  * They must be replaced or fitted against measured sensor data before scientific
  * or safety-critical conclusions are drawn.
  */
+@Serializable
 enum class EnvironmentScenario(
     val displayName: String,
     val description: String,

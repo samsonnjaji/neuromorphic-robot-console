@@ -1,22 +1,28 @@
 package com.samsonnjaji.nrc.domain.model
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class Detection(
     val label: String,
     val confidence: Float,
     val bearingDegrees: Float
 )
 
+@Serializable
 data class LidarPoint(
     val angleRadians: Float,
     val distanceMeters: Float
 )
 
+@Serializable
 data class EventSample(
     val x: Float,
     val y: Float,
     val polarity: Int
 )
 
+@Serializable
 data class ImuReading(
     val accelerationX: Float,
     val accelerationY: Float,
@@ -24,6 +30,7 @@ data class ImuReading(
     val angularVelocityZ: Float
 )
 
+@Serializable
 data class SnnLayerActivity(
     val layerName: String,
     val activeNeurons: Int,
@@ -36,6 +43,7 @@ data class SnnLayerActivity(
         else (activeNeurons.toFloat() / neuronCount).coerceIn(0f, 1f)
 }
 
+@Serializable
 data class RobotTelemetry(
     val sequence: Long = 0,
     val timestampMs: Long = 0,
