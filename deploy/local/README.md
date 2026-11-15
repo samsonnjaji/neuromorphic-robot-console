@@ -25,7 +25,7 @@ $env:NRC_DATABASE_USER = "nrc"
 $env:NRC_DATABASE_PASSWORD = "nrc_local_dev_only"
 $env:NRC_API_HOST = "127.0.0.1"
 $env:NRC_API_PORT = "8080"
-gradle :platform-api:run
+.\gradlew.bat :platform-api:run
 ```
 
 If you set a custom `NRC_DB_PASSWORD` in `.env`, replace the API password above with that same value.
@@ -50,7 +50,7 @@ Keep the API running. Open a third terminal at the repository root:
 ```powershell
 $env:NRC_API_BASE_URL = "http://127.0.0.1:8080"
 $env:NRC_ROBOT_ID = "nrc-desktop-relay"
-gradle :composeApp:run
+.\gradlew.bat :composeApp:run
 ```
 
 The desktop client will:
@@ -66,7 +66,7 @@ To run the original standalone simulator UI instead, remove the API environment 
 ```powershell
 Remove-Item Env:NRC_API_BASE_URL -ErrorAction SilentlyContinue
 Remove-Item Env:NRC_ROBOT_ID -ErrorAction SilentlyContinue
-gradle :composeApp:run
+.\gradlew.bat :composeApp:run
 ```
 
 ## 5. Build the Android app
@@ -74,7 +74,7 @@ gradle :composeApp:run
 The Android app currently uses the standalone simulator mode. From a separate terminal:
 
 ```powershell
-gradle :androidApp:assembleDebug
+.\gradlew.bat :androidApp:assembleDebug
 ```
 
 Expected result: `BUILD SUCCESSFUL`. The debug APK is normally generated under `androidApp/build/outputs/apk/debug/`.

@@ -32,6 +32,10 @@ jobs:
       - name: Check out source
         uses: actions/checkout@v4
 
+      - name: Verify Gradle Wrapper JAR checksum
+        working-directory: gradle/wrapper
+        run: sha256sum --check gradle-wrapper.jar.sha256
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
