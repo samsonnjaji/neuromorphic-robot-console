@@ -76,8 +76,8 @@ class IngestWorkflowTests(unittest.TestCase):
 
             result = NrcMcapIngestor(api).ingest(
                 path,
-                robot_id="lab-robot-01",
-                source_id="lab-source-01",
+                robot_id=" lab-robot-01 ",
+                source_id=" lab-source-01 ",
                 scenario="HEAVY_RAIN",
                 data_origin="SIMULATED",
             )
@@ -100,11 +100,20 @@ class IngestWorkflowTests(unittest.TestCase):
                 if path_value == "/api/v1/runs/run-1/recordings"
             )
             self.assertEqual(recording_create["format"], "MCAP")
+            self.assertEqual(recording_create["sourceId"], "lab-source-01")
+            self.assertEqual(recording_create["metadata"]["robotId"], "lab-robot-01")
             self.assertEqual(recording_create["metadata"]["dataOrigin"], "SIMULATED")
             self.assertEqual(
                 recording_create["metadata"]["timestamps"]["unit"],
                 "nanoseconds",
             )
+
+            run_create = next(
+                payload
+                for path_value, payload in api.requests
+                if path_value == "/api/v1/experiments/experiment-1/runs"
+            )
+            self.assertEqual(run_create["configuration"]["robotId"], "lab-robot-01")
 
             final_run_transition = [
                 payload
