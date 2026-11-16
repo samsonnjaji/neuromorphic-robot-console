@@ -113,7 +113,7 @@ class NrcMcapIngestor:
                         "dataOrigin": manifest["dataOrigin"],
                         "ingestionMode": manifest["ingestionMode"],
                         "sourceFormat": "MCAP",
-                        "robotId": robot_id,
+                        "robotId": manifest["robotId"],
                         "edgeGatewayVersion": __version__,
                         "manifestVersion": manifest["schemaVersion"],
                         "recordingSha256Hex": manifest["sha256Hex"],
