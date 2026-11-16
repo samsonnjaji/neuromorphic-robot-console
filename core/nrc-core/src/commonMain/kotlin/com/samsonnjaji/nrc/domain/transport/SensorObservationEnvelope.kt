@@ -40,7 +40,7 @@ enum class SensorDataOrigin {
  * A bounded, typed metadata envelope for one decoded sensor observation.
  *
  * sourceTimestampNs belongs to sourceClock and is deliberately not assumed to be Unix time.
- * receivedAtUnixNs is always the edge/API host's Unix wall-clock receive time.
+ * receivedAtUnixNs is the edge gateway's Unix wall-clock receive time.
  * High-bandwidth raw payloads remain in MCAP/object-storage artifacts; payload is a compact
  * JSON observation or summary for live fan-out.
  */
@@ -55,11 +55,11 @@ data class SensorObservationEnvelope(
     val rosType: String,
     val sequence: Long,
     val sourceTimestampNs: Long? = null,
-    val sourceClock: SensorTimestampClock = SensorTimestampClock.UNKNOWN,
+    val sourceClock: SensorTimestampClock,
     val receivedAtUnixNs: Long,
     val frameId: String? = null,
     val childFrameId: String? = null,
-    val dataOrigin: SensorDataOrigin = SensorDataOrigin.UNKNOWN,
-    val units: Map<String, String> = emptyMap(),
+    val dataOrigin: SensorDataOrigin,
+    val units: Map<String, String>,
     val payload: JsonObject
 )
