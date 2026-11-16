@@ -156,7 +156,7 @@ class McapInspection:
             )
 
         return {
-            "schemaVersion": 1,
+            "schemaVersion": 2,
             "gatewayVersion": __version__,
             "recordedAtUnixMs": (
                 recorded_at_unix_ms
