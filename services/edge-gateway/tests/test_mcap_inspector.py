@@ -108,7 +108,10 @@ class McapInspectorTests(unittest.TestCase):
                 robot_id="robot-01",
                 source_id="lab-source",
                 recorded_at_unix_ms=1_794_810_000_000,
+                data_origin="SIMULATED",
             )
+            self.assertEqual(manifest["dataOrigin"], "SIMULATED")
+            self.assertEqual(manifest["ingestionMode"], "RECORDED")
             schema_path = (
                 Path(__file__).resolve().parents[3]
                 / "schemas/edge-recording-manifest.v1.schema.json"
