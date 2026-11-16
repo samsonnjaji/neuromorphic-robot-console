@@ -3,20 +3,22 @@
 **Last updated:** 2026-11-16  
 **Repository:** https://github.com/samsonnjaji/neuromorphic-robot-console  
 **Base branch:** `main`  
-**Active development branch:** `feat/edge-mcap-ingestion-v1` ([PR #16 — offline MCAP ingestion gateway](https://github.com/samsonnjaji/neuromorphic-robot-console/pull/16); CI pending)  
+**Main commit:** `dae6fa3cd4badc9196ccd296eae77dbe7f4d65ff`  
+**Active development branch:** `feat/edge-provenance-demo-fixture` (remote implementation in progress; PR not yet opened)  
 **Artifact storage merge commit:** `3300de07779bc8c06329eeae97ee5c5ea8bca3ef`  
 **Artifact cleanup merge commit:** `e4c945f6aa9f8eaccfc816da48ac48ca92675e3e`  
-**Merged PRs:** [PR #14 — S3-compatible artifact storage](https://github.com/samsonnjaji/neuromorphic-robot-console/pull/14); [PR #15 — automatic abandoned-upload cleanup](https://github.com/samsonnjaji/neuromorphic-robot-console/pull/15)  
+**Merged PRs:** [PR #14 — S3-compatible artifact storage](https://github.com/samsonnjaji/neuromorphic-robot-console/pull/14); [PR #15 — automatic abandoned-upload cleanup](https://github.com/samsonnjaji/neuromorphic-robot-console/pull/15); [PR #16 — offline MCAP ingestion gateway](https://github.com/samsonnjaji/neuromorphic-robot-console/pull/16)  
 **Cleanup push CI:** [Run 68 — success](https://github.com/samsonnjaji/neuromorphic-robot-console/actions/runs/43714195321)  
 **Cleanup PR CI:** [Run 69 — success](https://github.com/samsonnjaji/neuromorphic-robot-console/actions/runs/43714200783)  
 **Main CI:** [Run 70 — success](https://github.com/samsonnjaji/neuromorphic-robot-console/actions/runs/43714385506); [Run 71 — success](https://github.com/samsonnjaji/neuromorphic-robot-console/actions/runs/43714476010)  
+**Gateway PR CI:** [Run 116 — success](https://github.com/samsonnjaji/neuromorphic-robot-console/actions/runs/43804370558)  
 **Security:** GitGuardian checks passed.
 
 ## 1. Instruction for the next ChatGPT session
 
 Continue in the existing repository. Do not restart architecture planning or ask the user to repeat decisions. First inspect the current `main` branch, active PR and latest GitHub Actions run; the remote repository is the source of truth.
 
-The user wants to be told explicitly when to pull the code onto their Windows PC and open it in Cursor. The earlier local baseline is complete: Windows 11/JDK 17, Gradle 9.7, Android SDK, Docker engine through Ubuntu WSL, PostgreSQL exposed on host port 5435, API health/experiment CRUD, persistence across API restart, desktop REST/WebSocket relay and Android debug build. Artifact storage PR #14 and cleanup PR #15 are merged. **The combined PostgreSQL V4/RustFS workflow has passed CI but has not yet been smoke-tested on the user's PC.** That local test is independent of PR #16 and can be run from current `main` whenever the workstation is available. Do not ask the user to pull the feature branch until PR #16 is merged.
+The user wants to be told explicitly when to pull the code onto their Windows PC and open it in Cursor. The earlier local baseline is complete: Windows 11/JDK 17, Gradle 9.7, Android SDK, Docker engine through Ubuntu WSL, PostgreSQL exposed on host port 5435, API health/experiment CRUD, persistence across API restart, desktop REST/WebSocket relay and Android debug build. Artifact storage PR #14, cleanup PR #15 and offline MCAP gateway PR #16 are merged. **The combined PostgreSQL V4/RustFS workflow and the gateway-to-Ktor/RustFS synthetic MCAP import have not yet been smoke-tested on the user's PC.** The next workstation checkpoint is to pull current `main`, preserve the existing PostgreSQL/object-store volumes, and run both local tests when the PC is available.
 
 Keep this handoff and roadmap current after substantial milestones. Record commit SHAs, PR links, CI runs, implemented work, limitations and the next exact task. Never claim a test passed without checking its run.
 
@@ -106,15 +108,15 @@ No remote robot actuation in the initial release. Any later control plane needs 
 - Run 66, final cleanup branch push including local setup documentation, passed the full workflow.
 - Run 67, PR #15 validation, passed the full workflow; GitGuardian Security Checks also passed.
 
-### Edge Gateway v1 — PR #16 open, not yet merged
+### Edge Gateway v1 — PR #16 merged
 
 Branch: `feat/edge-mcap-ingestion-v1`.
 
 The first Python gateway increment adds offline MCAP framing validation, channel/topic/schema indexing, per-channel message and sequence counts, separate publish/log timestamp ranges in nanoseconds, streaming SHA-256, a versioned recording manifest, and an NRC API client for single-part and multipart artifact upload. The ingestion workflow registers an experiment run and MCAP recording session, uploads the untouched MCAP plus manifest, and completes the run only after the API reports both artifacts `VERIFIED`.
 
-Automated tests cover MCAP inspection, zero publish-time handling, manifest schema validation, single/multipart upload planning and API lifecycle orchestration. PR #16 is open and CI verification is pending. This branch is not merged and must not be described as a released gateway.
+Automated tests cover MCAP inspection, zero publish-time handling, manifest schema validation, single/multipart upload planning and API lifecycle orchestration. PR #16 merged as `dae6fa3cd4badc9196ccd296eae77dbe7f4d65ff`. GitHub Actions Run #116 passed the Python gateway tests, manifest contract validation, existing Kotlin/core/API/PostgreSQL/RustFS integration checks, Docker Compose validation and Android debug build. The local gateway-to-Ktor/RustFS smoke test is still pending.
 
-This is offline MCAP ingestion only. Live ROS 2 subscriptions, CDR payload decoding, conversion into the dashboard `RobotTelemetry` model, live bounded buffering/reconnection, ROS bag ingestion and real-sensor validation remain outstanding. Frame IDs or units embedded inside serialized payloads are not decoded in this increment; the original recording remains untouched.
+This is offline MCAP ingestion only. Live ROS 2 subscriptions, CDR payload decoding, conversion into the dashboard `RobotTelemetry` model, live bounded buffering/reconnection, ROS bag ingestion and real-sensor validation remain outstanding. The manifest distinguishes `dataOrigin` (`PHYSICAL_SENSOR`, `SIMULATED`, `DATASET`, `UNKNOWN`) from `ingestionMode` (`RECORDED`); it never assumes an MCAP file is physical sensor data. Frame IDs or units embedded inside serialized payloads are not decoded in this increment; the original recording remains untouched.
 
 ## 4. Current limitations — do not misrepresent
 
@@ -132,20 +134,19 @@ This is offline MCAP ingestion only. Live ROS 2 subscriptions, CDR payload decod
 
 ## 5. Immediate next tasks
 
-1. Merge [PR #15](https://github.com/samsonnjaji/neuromorphic-robot-console/pull/15); push CI Run 66, PR CI Run 67 and GitGuardian checks are green.
-2. Tell the user to pull the merged `main` branch into Cursor. Preserve the existing local PostgreSQL volume and data; retain host port 5435 if native PostgreSQL still owns 5432.
-3. Run the combined Windows smoke test for Flyway V4, RustFS single-PUT upload, server-side SHA-256 verification, verified download and background cleanup startup.
-4. Fix local issues and update the handoff with the verified result.
-5. Finish CI verification and merge the offline MCAP ingestion v1 branch only after all checks pass.
-6. Ask the user to pull the merged main branch into Cursor for the pending Flyway V4/RustFS local smoke test; preserve existing PostgreSQL/RustFS volumes.
-7. Extend the gateway with live read-only ROS 2 subscriptions, selected CDR decoders, bounded buffering/backpressure and reconnect behavior; validate one real sensor recording.
-8. Keep inference workers and scientific model comparison sequenced behind validated ingestion.
+1. Finish PR #17: explicit MCAP source-origin semantics and a labelled synthetic fixture generator; run CI before merging.
+2. Ask the user to pull current `main` into the Windows checkout when the workstation is available. Preserve the existing PostgreSQL and RustFS volumes; keep host port 5435 if native PostgreSQL owns 5432.
+3. Run the combined local storage smoke test for Flyway V4, RustFS upload/download, SHA-256 verification and abandoned-upload cleanup.
+4. Run the synthetic MCAP end-to-end smoke test against the local Ktor/RustFS stack, with `--data-origin SIMULATED`.
+5. Record the actual local results in this handoff; do not claim real-sensor validation from the synthetic fixture.
+6. Implement the live read-only ROS 2 adapter, selected CDR decoding, bounded buffering/backpressure and reconnect behavior.
+7. Validate one real sensor recording before starting inference-worker comparisons.
 
 ## 6. Local testing instructions
 
 The user's Windows checkout is C:\\Users\\njaji\\Projects\\neuromorphic-robot-console. Docker is available through Ubuntu WSL; Windows PowerShell does not expose docker.exe. Native PostgreSQL owns host port 5432, so the NRC container is exposed on host port 5435.
 
-PR #15 is already merged and the following procedure applies to current `main`. PR #16 is a separate gateway increment and does not need to be merged before this local storage smoke test:
+PRs #15 and #16 are already merged; the following procedure applies to current `main`:
 
 1. In PowerShell at the repository root:
    ```powershell
