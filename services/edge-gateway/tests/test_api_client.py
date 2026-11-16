@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import tempfile
+import threading
 import unittest
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
 
@@ -58,7 +60,46 @@ class FakeUploadClient(NrcApiClient):
         return f'"etag-{offset}"'
 
 
+class _UploadHandler(BaseHTTPRequestHandler):
+    def do_PUT(self) -> None:
+        length = int(self.headers["Content-Length"])
+        self.server.received = self.rfile.read(length)
+        self.server.content_type = self.headers.get("Content-Type")
+        self.send_response(200)
+        self.send_header("ETag", '"stream-etag"')
+        self.end_headers()
+
+    def log_message(self, format: str, *args: Any) -> None:
+        return
+
+
 class ArtifactUploadTests(unittest.TestCase):
+    def test_put_stream_sends_large_file_in_bounded_chunks(self) -> None:
+        content = bytes(range(256)) * 10_000
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "stream.bin"
+            path.write_bytes(content)
+            server = ThreadingHTTPServer(("127.0.0.1", 0), _UploadHandler)
+            thread = threading.Thread(target=server.serve_forever, daemon=True)
+            thread.start()
+            try:
+                client = NrcApiClient("http://127.0.0.1")
+                etag = client._put_stream(
+                    f"http://127.0.0.1:{server.server_port}/signed",
+                    path,
+                    offset=0,
+                    length=len(content),
+                    headers={"Content-Type": "application/octet-stream"},
+                )
+                self.assertEqual(etag, '"stream-etag"')
+                self.assertEqual(server.received, content)
+                self.assertEqual(
+                    server.content_type, "application/octet-stream"
+                )
+            finally:
+                server.shutdown()
+                server.server_close()
+                thread.join(timeout=2)
     def test_single_put_upload_is_completed_and_verified(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "small.mcap"
