@@ -62,6 +62,7 @@ class NrcApiClient:
         recording_id: str,
         file_path: str | Path,
         content_type: str = "application/octet-stream",
+        sha256_hex: str | None = None,
     ) -> dict[str, Any]:
         path = Path(file_path)
         size_bytes = path.stat().st_size
@@ -72,7 +73,7 @@ class NrcApiClient:
             "fileName": path.name,
             "contentType": content_type,
             "sizeBytes": size_bytes,
-            "sha256Hex": _sha256(path),
+            "sha256Hex": sha256_hex or _sha256(path),
         }
         recording_segment = quote(recording_id, safe="")
         intent = self.post_json(
