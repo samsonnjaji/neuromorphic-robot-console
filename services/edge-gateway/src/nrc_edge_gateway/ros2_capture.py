@@ -9,7 +9,7 @@ import signal
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, Sequence
+from typing import Any, Callable
 
 
 DEFAULT_MAX_CACHE_SIZE_BYTES = 64 * 1024 * 1024
