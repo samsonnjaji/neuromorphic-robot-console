@@ -87,8 +87,8 @@ The gateway creates a run, transitions it to `RUNNING`, creates and finalizes an
 The read-only capture command uses the ROS 2 rosbag2 recorder and its MCAP storage plugin. Install the plugin for the sourced ROS distribution, then run inside the ROS 2 environment:
 
 ```bash
-sudo apt install ros-${ROS_DISTRO}-rosbag2-storage-mcap
-source /opt/ros/${ROS_DISTRO}/setup.bash
+sudo apt install ros-jazzy-rosbag2-storage-mcap
+source /opt/ros/jazzy/setup.bash
 nrc-edge ros2-capture \
   --topics /imu/data /scan /odom \
   --output ./bags/mission-001 \
