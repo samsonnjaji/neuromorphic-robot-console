@@ -54,7 +54,11 @@ class FakeApi:
         raise AssertionError(f"Unexpected API request: {path}")
 
     def upload_artifact(
-        self, recording_id: str, file_path: str | Path, content_type: str
+        self,
+        recording_id: str,
+        file_path: str | Path,
+        content_type: str,
+        sha256_hex: str | None = None,
     ) -> dict[str, Any]:
         path = Path(file_path)
         self.uploads.append(
