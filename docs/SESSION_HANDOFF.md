@@ -4,7 +4,7 @@
 **Repository:** https://github.com/samsonnjaji/neuromorphic-robot-console  
 **Base branch:** `main`  
 **Main commit:** `dae6fa3cd4badc9196ccd296eae77dbe7f4d65ff`  
-**Active development branch:** `feat/edge-provenance-demo-fixture` (remote provenance hardening and synthetic-fixture work in progress; PR pending)  
+**Active development branch:** `feat/edge-provenance-demo-fixture` ([PR #17 — provenance hardening and synthetic MCAP fixture](https://github.com/samsonnjaji/neuromorphic-robot-console/pull/17); CI pending)  
 **Artifact storage merge commit:** `3300de07779bc8c06329eeae97ee5c5ea8bca3ef`  
 **Artifact cleanup merge commit:** `e4c945f6aa9f8eaccfc816da48ac48ca92675e3e`  
 **Merged PRs:** [PR #14 — S3-compatible artifact storage](https://github.com/samsonnjaji/neuromorphic-robot-console/pull/14); [PR #15 — automatic abandoned-upload cleanup](https://github.com/samsonnjaji/neuromorphic-robot-console/pull/15); [PR #16 — offline MCAP ingestion gateway](https://github.com/samsonnjaji/neuromorphic-robot-console/pull/16)  
@@ -110,7 +110,7 @@ No remote robot actuation in the initial release. Any later control plane needs 
 
 ### Edge Gateway v1 — PR #16 merged
 
-PR #16 delivers the offline MCAP importer. The main-branch manifest in PR #16 uses a recorded-ingestion label; the active provenance-hardening branch separates source origin (`PHYSICAL_SENSOR`, `SIMULATED`, `DATASET`, `UNKNOWN`) from ingestion mode (`RECORDED`) and adds a synthetic MCAP fixture generator. Do not treat that follow-up as merged until its PR and CI pass.
+PR #16 delivers the offline MCAP importer. The main-branch manifest in PR #16 uses a recorded-ingestion label; PR #17 is open to separate source origin (`PHYSICAL_SENSOR`, `SIMULATED`, `DATASET`, `UNKNOWN`) from ingestion mode (`RECORDED`) and add a labelled synthetic MCAP fixture generator. Do not treat that follow-up as merged until its PR and CI pass.
 
 Branch: `feat/edge-mcap-ingestion-v1`.
 
@@ -136,7 +136,7 @@ This is offline MCAP ingestion only. Live ROS 2 subscriptions, CDR payload decod
 
 ## 5. Immediate next tasks
 
-1. Finish PR #17: explicit MCAP source-origin semantics and a labelled synthetic fixture generator; run CI before merging.
+1. Verify PR #17 CI, fix any failures, and merge only after the complete workflow passes.
 2. Ask the user to pull current `main` into the Windows checkout when the workstation is available. Preserve the existing PostgreSQL and RustFS volumes; keep host port 5435 if native PostgreSQL owns 5432.
 3. Run the combined local storage smoke test for Flyway V4, RustFS upload/download, SHA-256 verification and abandoned-upload cleanup.
 4. Run the synthetic MCAP end-to-end smoke test against the local Ktor/RustFS stack, with `--data-origin SIMULATED`.
