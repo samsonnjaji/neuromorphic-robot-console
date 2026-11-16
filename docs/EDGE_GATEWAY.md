@@ -32,4 +32,4 @@ Generate a labelled test recording with `python services/edge-gateway/examples/c
 
 ## Next work
 
-Live ROS 2 subscriptions, selected CDR decoders, normalized sensor adapters, bounded live buffering/backpressure, reconnection, and real-sensor validation remain planned. The gateway remains read-only; robot actuation is outside the initial platform release.
+Live ROS 2 subscriptions, selected CDR decoders, normalized sensor adapters, bounded live buffering/backpressure, reconnection, and real-sensor validation remain planned. The Platform API now has a separate bounded `sensor.observation` contract and stream so individual sensor topics do not need to be padded into the complete dashboard snapshot. The gateway remains read-only; robot actuation is outside the initial platform release.

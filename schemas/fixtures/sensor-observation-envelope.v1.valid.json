@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "messageType": "sensor.observation",
+  "robotId": "nrc-lab-robot",
+  "sourceId": "imu-front",
+  "sensorType": "IMU",
+  "topic": "/imu/data",
+  "rosType": "sensor_msgs/msg/Imu",
+  "sequence": 1,
+  "sourceTimestampNs": 123000000,
+  "sourceClock": "ROS_TIME",
+  "receivedAtUnixNs": 1800000000000000000,
+  "frameId": "imu_link",
+  "dataOrigin": "PHYSICAL_SENSOR",
+  "units": {
+    "linear_acceleration": "m/s^2",
+    "angular_velocity": "rad/s"
+  },
+  "payload": {
+    "linearAcceleration": {
+      "x": 0.1,
+      "y": 0.2,
+      "z": 9.81
+    },
+    "angularVelocity": {
+      "x": 0,
+      "y": 0,
+      "z": 0.01
+    }
+  }
+}

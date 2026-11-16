@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "messageType": "sensor.observation",
+  "robotId": "nrc-lab-robot",
+  "sourceId": "imu-front",
+  "sensorType": "THERMAL_CAMERA",
+  "topic": "/imu/data",
+  "rosType": "sensor_msgs/msg/Imu",
+  "sequence": -1,
+  "sourceTimestampNs": 123000000,
+  "sourceClock": "ROS_TIME",
+  "receivedAtUnixNs": 1800000000000000000,
+  "dataOrigin": "PHYSICAL_SENSOR",
+  "units": {},
+  "payload": {}
+}

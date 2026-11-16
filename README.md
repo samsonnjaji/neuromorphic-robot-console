@@ -67,6 +67,7 @@ The target architecture is staged. A planned component is not considered impleme
 - [Experiment manifest v1](schemas/experiment-manifest.v1.schema.json)
 - [Edge recording manifest v1 — historical](schemas/edge-recording-manifest.v1.schema.json)
 - [Edge recording manifest v2 — current](schemas/edge-recording-manifest.v2.schema.json)
+- [Sensor observation envelope v1](schemas/sensor-observation-envelope.v1.schema.json)
 - [OpenAPI 3.1](docs/api/openapi.json)
 
 ## Safety

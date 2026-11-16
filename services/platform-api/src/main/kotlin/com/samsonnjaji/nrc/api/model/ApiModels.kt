@@ -176,3 +176,12 @@ data class TelemetryAcceptedResponse(
     val robotId: String,
     val sequence: Long
 )
+
+@Serializable
+data class SensorObservationAcceptedResponse(
+    val status: String,
+    val robotId: String,
+    val sourceId: String,
+    val topic: String,
+    val sequence: Long
+)

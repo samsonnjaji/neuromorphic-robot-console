@@ -1,6 +1,6 @@
 # NRC Platform API reference
 
-The versioned OpenAPI 3.1 document is [openapi.json](openapi.json). It references the canonical telemetry envelope schema in `schemas/telemetry-envelope.v1.schema.json`.
+The versioned OpenAPI 3.1 document is [openapi.json](openapi.json). It references the canonical dashboard snapshot schema and the separate sensor-observation envelope schema.
 
 ## Implemented REST endpoints
 
@@ -29,9 +29,15 @@ The versioned OpenAPI 3.1 document is [openapi.json](openapi.json). It reference
 - `POST /api/v1/artifacts/{artifactId}/complete`
 - `POST /api/v1/artifacts/{artifactId}/download-url`
 
-### Telemetry
+### Telemetry snapshots
 - `POST /api/v1/robots/{robotId}/telemetry`
 - `WS /api/v1/robots/{robotId}/stream`
+
+### Sensor observations
+- `POST /api/v1/robots/{robotId}/observations`
+- `WS /api/v1/robots/{robotId}/observations/stream`
+
+Sensor observations carry source identity, ROS type/topic, per-source/topic sequence, declared source clock, host receive time, frame IDs, units and a bounded JSON payload. Source timestamps are not assumed to be Unix time. The current API accepts payloads up to 64 KiB; raw images, point clouds, event streams and long-running recordings belong in MCAP/object-storage artifacts.
 
 ## Experiment and recording lifecycle
 
@@ -66,9 +72,9 @@ Presigned URLs are bearer credentials. Keep them private and respect their expir
 
 The API does not proxy the upload body. Clients upload directly to object storage using the presigned URL. The API streams the object back from storage during integrity verification without loading it fully into memory.
 
-## WebSocket telemetry
+## WebSocket telemetry and sensor observations
 
-Accepted telemetry is broadcast as a JSON `TelemetryEnvelope`. The current stream hub uses a bounded in-memory buffer; it is not a durable recording service. Use recording artifacts for long-running raw sensor data.
+Accepted snapshots are broadcast as JSON `TelemetryEnvelope` messages. Sensor observations are broadcast separately as JSON `SensorObservationEnvelope` messages. Both hubs use bounded in-memory buffers and are not durable recording services. Use MCAP/object-storage artifacts for long-running or high-bandwidth raw sensor data.
 
 ## Development security boundary
 

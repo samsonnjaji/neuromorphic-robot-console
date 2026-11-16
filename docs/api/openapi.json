@@ -174,6 +174,55 @@
         }
       }
     },
+    "/api/v1/robots/{robotId}/observations": {
+      "post": {
+        "operationId": "ingestSensorObservation",
+        "summary": "Ingest a bounded sensor observation",
+        "parameters": [
+          {
+            "name": "robotId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../../schemas/sensor-observation-envelope.v1.schema.json"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Sensor observation accepted for bounded live fan-out",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SensorObservationAcceptedResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Sensor observation rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/experiments/{experimentId}/runs": {
       "get": {
         "operationId": "listExperimentRuns",
@@ -1034,6 +1083,18 @@
       "messageSchema": {
         "$ref": "../../schemas/telemetry-envelope.v1.schema.json"
       }
+    },
+    "/api/v1/robots/{robotId}/observations/stream": {
+      "description": "WebSocket endpoint for compact sensor.observation events. The bounded in-memory hub retains only the latest event and a bounded buffer; raw high-bandwidth sensor data belongs in MCAP/object-storage artifacts.",
+      "pathParameters": {
+        "robotId": {
+          "type": "string",
+          "required": true
+        }
+      },
+      "messageSchema": {
+        "$ref": "../../schemas/sensor-observation-envelope.v1.schema.json"
+      }
     }
   },
   "components": {
@@ -1195,6 +1256,36 @@
             "const": "accepted"
           },
           "robotId": {
+            "type": "string"
+          },
+          "sequence": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "SensorObservationAcceptedResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "status",
+          "robotId",
+          "sourceId",
+          "topic",
+          "sequence"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "const": "accepted"
+          },
+          "robotId": {
+            "type": "string"
+          },
+          "sourceId": {
+            "type": "string"
+          },
+          "topic": {
             "type": "string"
           },
           "sequence": {

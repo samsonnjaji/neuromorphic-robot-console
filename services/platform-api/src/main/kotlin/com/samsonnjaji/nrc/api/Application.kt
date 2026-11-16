@@ -25,9 +25,11 @@ import com.samsonnjaji.nrc.api.model.CreateExperimentRunRequest
 import com.samsonnjaji.nrc.api.model.CreateRecordingSessionRequest
 import com.samsonnjaji.nrc.api.model.HealthResponse
 import com.samsonnjaji.nrc.api.model.TelemetryAcceptedResponse
+import com.samsonnjaji.nrc.api.model.SensorObservationAcceptedResponse
 import com.samsonnjaji.nrc.api.model.TransitionExperimentRunRequest
 import com.samsonnjaji.nrc.api.model.TransitionRecordingSessionRequest
 import com.samsonnjaji.nrc.api.telemetry.TelemetryHub
+import com.samsonnjaji.nrc.api.telemetry.SensorObservationHub
 import com.samsonnjaji.nrc.api.storage.ArtifactObjectStorage
 import com.samsonnjaji.nrc.api.storage.CompletedObjectPart
 import com.samsonnjaji.nrc.domain.robustness.EnvironmentScenario
@@ -35,6 +37,9 @@ import com.samsonnjaji.nrc.domain.robustness.ExperimentSourceType
 import com.samsonnjaji.nrc.domain.transport.EnvelopeValidation
 import com.samsonnjaji.nrc.domain.transport.TelemetryEnvelope
 import com.samsonnjaji.nrc.domain.transport.TelemetryStreamGuard
+import com.samsonnjaji.nrc.domain.transport.SensorObservationEnvelope
+import com.samsonnjaji.nrc.domain.transport.SensorObservationStreamGuard
+import com.samsonnjaji.nrc.domain.transport.SensorObservationValidation
 import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
@@ -74,6 +79,7 @@ fun Application.module(
     artifactObjectStorage: ArtifactObjectStorage? = null,
     artifactMaintenanceConfig: ArtifactMaintenanceConfig = ArtifactMaintenanceConfig(),
     telemetryHub: TelemetryHub = TelemetryHub(),
+    sensorObservationHub: SensorObservationHub = SensorObservationHub(),
     jsonFormat: Json = NrcJson
 ) {
     install(ContentNegotiation) {
@@ -83,6 +89,8 @@ fun Application.module(
 
     val streamGuards = ConcurrentHashMap<String, TelemetryStreamGuard>()
     val streamLocks = ConcurrentHashMap<String, Mutex>()
+    val sensorObservationGuards = ConcurrentHashMap<String, SensorObservationStreamGuard>()
+    val sensorObservationLocks = ConcurrentHashMap<String, Mutex>()
 
     routing {
         route("/api/$API_VERSION") {
@@ -673,6 +681,56 @@ fun Application.module(
                 if (robotId.isNullOrBlank()) return@webSocket
 
                 telemetryHub.stream(robotId).collect { envelope ->
+                    send(Frame.Text(jsonFormat.encodeToString(envelope)))
+                }
+            }
+
+            post("/robots/{robotId}/observations") {
+                val robotId = call.parameters["robotId"]
+                if (robotId.isNullOrBlank()) {
+                    call.respond(
+                        HttpStatusCode.BadRequest,
+                        ApiError("missing_robot_id", "A robot ID is required.")
+                    )
+                    return@post
+                }
+
+                val envelope = call.receive<SensorObservationEnvelope>()
+                val guard = sensorObservationGuards.computeIfAbsent(robotId) {
+                    SensorObservationStreamGuard(robotId)
+                }
+                val lock = sensorObservationLocks.computeIfAbsent(robotId) { Mutex() }
+                val validation = lock.withLock { guard.validate(envelope) }
+
+                if (validation != SensorObservationValidation.ACCEPTED) {
+                    call.respond(
+                        HttpStatusCode.BadRequest,
+                        ApiError(
+                            code = "invalid_sensor_observation",
+                            message = "Sensor observation rejected: ${validation.name.lowercase()}."
+                        )
+                    )
+                    return@post
+                }
+
+                sensorObservationHub.publish(envelope)
+                call.respond(
+                    HttpStatusCode.Accepted,
+                    SensorObservationAcceptedResponse(
+                        status = "accepted",
+                        robotId = envelope.robotId,
+                        sourceId = envelope.sourceId,
+                        topic = envelope.topic,
+                        sequence = envelope.sequence
+                    )
+                )
+            }
+
+            webSocket("/robots/{robotId}/observations/stream") {
+                val robotId = call.parameters["robotId"]
+                if (robotId.isNullOrBlank()) return@webSocket
+
+                sensorObservationHub.stream(robotId).collect { envelope ->
                     send(Frame.Text(jsonFormat.encodeToString(envelope)))
                 }
             }
