@@ -136,6 +136,20 @@ class Ros2CaptureTests(unittest.TestCase):
                     )
                 )
 
+    def test_missing_ros2_executable_is_actionable(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            recorder = Ros2BagRecorder(
+                popen_factory=lambda *args, **kwargs: FakeProcess(),
+                executable_resolver=lambda _: None,
+            )
+            with self.assertRaisesRegex(Ros2CaptureError, "was not found"):
+                recorder.record(
+                    Ros2RecordOptions(
+                        topics=("/imu/data",),
+                        output_directory=Path(directory) / "capture",
+                    )
+                )
+
     def test_rejects_existing_output_directory(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             output = Path(directory) / "capture"
@@ -149,6 +163,17 @@ class Ros2CaptureTests(unittest.TestCase):
                     Ros2RecordOptions(
                         topics=("/imu/data",),
                         output_directory=output,
+                    )
+                )
+
+    def test_rejects_missing_qos_override_file(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            with self.assertRaises(ValueError):
+                build_ros2_record_command(
+                    Ros2RecordOptions(
+                        topics=("/imu/data",),
+                        output_directory=Path(directory) / "capture",
+                        qos_profile_overrides_path=Path(directory) / "missing.yaml",
                     )
                 )
 
