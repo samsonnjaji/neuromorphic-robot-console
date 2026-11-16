@@ -4,7 +4,7 @@
 **Repository:** https://github.com/samsonnjaji/neuromorphic-robot-console  
 **Base branch:** `main`  
 **Main commit:** `9f060271e0eafac078cb20c64748e42f4630d487`  
-**Active development branch:** `feat/edge-ros2-bag-capture` (remote implementation in progress; PR pending). PRs #16 and #17 are merged.  
+**Active development branch:** `feat/edge-ros2-bag-capture` ([PR #19 — read-only ROS 2 MCAP capture and sensor observation contract](https://github.com/samsonnjaji/neuromorphic-robot-console/pull/19); CI pending). PRs #16 and #17 are merged.  
 **Artifact storage merge commit:** `3300de07779bc8c06329eeae97ee5c5ea8bca3ef`  
 **Artifact cleanup merge commit:** `e4c945f6aa9f8eaccfc816da48ac48ca92675e3e`  
 **Merged PRs:** [PR #14 — S3-compatible artifact storage](https://github.com/samsonnjaji/neuromorphic-robot-console/pull/14); [PR #15 — automatic abandoned-upload cleanup](https://github.com/samsonnjaji/neuromorphic-robot-console/pull/15); [PR #16 — offline MCAP ingestion gateway](https://github.com/samsonnjaji/neuromorphic-robot-console/pull/16); [PR #17 — provenance v2 and synthetic MCAP fixture](https://github.com/samsonnjaji/neuromorphic-robot-console/pull/17)  
@@ -139,7 +139,7 @@ This is offline MCAP ingestion only. Live ROS 2 subscriptions, CDR payload decod
 
 ## 5. Immediate next tasks
 
-1. Complete PR #18 CI for the read-only rosbag2/MCAP capture adapter and Sensor Observation Envelope v1.
+1. Complete PR #19 CI for the read-only rosbag2/MCAP capture adapter and Sensor Observation Envelope v1.
 2. Merge only after the full CI workflow passes.
 3. When the workstation is available, pull current main and run the PostgreSQL V4/RustFS and synthetic MCAP importer smoke tests.
 4. In WSL/Linux with ROS 2 and the MCAP storage plugin installed, validate one real, explicitly allowlisted sensor recording.
