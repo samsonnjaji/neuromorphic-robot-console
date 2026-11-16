@@ -3,23 +3,24 @@
 **Last updated:** 2026-11-16  
 **Repository:** https://github.com/samsonnjaji/neuromorphic-robot-console  
 **Base branch:** `main`  
-**Main commit:** `b31478332fe08924630cb83a73ae9ca94de4ac26`  
-**Active development branch:** none; PR #17 is merged. Next increment: local gateway smoke validation, then read-only ROS 2 capture design.  
+**Main implementation merge:** `aadd2f04cadc7f1cf96f4ba34db1e0a3f9e71ec6`  
+**Active development branch:** none; PRs #17 and #18 are merged. Next increment: local storage, MCAP and sensor-observation smoke validation, then read-only ROS 2 capture.  
 **Artifact storage merge commit:** `3300de07779bc8c06329eeae97ee5c5ea8bca3ef`  
 **Artifact cleanup merge commit:** `e4c945f6aa9f8eaccfc816da48ac48ca92675e3e`  
-**Merged PRs:** [PR #14 — S3-compatible artifact storage](https://github.com/samsonnjaji/neuromorphic-robot-console/pull/14); [PR #15 — automatic abandoned-upload cleanup](https://github.com/samsonnjaji/neuromorphic-robot-console/pull/15); [PR #16 — offline MCAP ingestion gateway](https://github.com/samsonnjaji/neuromorphic-robot-console/pull/16); [PR #17 — provenance v2 and synthetic MCAP fixture](https://github.com/samsonnjaji/neuromorphic-robot-console/pull/17)  
+**Merged PRs:** [PR #14 — S3-compatible artifact storage](https://github.com/samsonnjaji/neuromorphic-robot-console/pull/14); [PR #15 — automatic abandoned-upload cleanup](https://github.com/samsonnjaji/neuromorphic-robot-console/pull/15); [PR #16 — offline MCAP ingestion gateway](https://github.com/samsonnjaji/neuromorphic-robot-console/pull/16); [PR #17 — provenance v2 and synthetic MCAP fixture](https://github.com/samsonnjaji/neuromorphic-robot-console/pull/17); [PR #18 — sensor-observation contract/API](https://github.com/samsonnjaji/neuromorphic-robot-console/pull/18)  
 **Cleanup push CI:** [Run 68 — success](https://github.com/samsonnjaji/neuromorphic-robot-console/actions/runs/43714195321)  
 **Cleanup PR CI:** [Run 69 — success](https://github.com/samsonnjaji/neuromorphic-robot-console/actions/runs/43714200783)  
 **Main CI:** [Run 70 — success](https://github.com/samsonnjaji/neuromorphic-robot-console/actions/runs/43714385506); [Run 71 — success](https://github.com/samsonnjaji/neuromorphic-robot-console/actions/runs/43714476010)  
 **Gateway PR CI:** [Run 116 — success](https://github.com/samsonnjaji/neuromorphic-robot-console/actions/runs/43804370558)  
 **Provenance PR:** [PR #17 — merged](https://github.com/samsonnjaji/neuromorphic-robot-console/pull/17); merge commit `b31478332fe08924630cb83a73ae9ca94de4ac26`; [CI Run 191 — success](https://github.com/samsonnjaji/neuromorphic-robot-console/actions/runs/43806042612).  
+**Sensor-observation API:** [PR #18 — merged](https://github.com/samsonnjaji/neuromorphic-robot-console/pull/18); merge commit `aadd2f04cadc7f1cf96f4ba34db1e0a3f9e71ec6`; [CI Run 243 — success](https://github.com/samsonnjaji/neuromorphic-robot-console/actions/runs/43807192758).  
 **Security:** GitGuardian checks passed.
 
 ## 1. Instruction for the next ChatGPT session
 
 Continue in the existing repository. Do not restart architecture planning or ask the user to repeat decisions. First inspect the current `main` branch, active PR and latest GitHub Actions run; the remote repository is the source of truth.
 
-The user wants to be told explicitly when to pull the code onto their Windows PC and open it in Cursor. The earlier local baseline is complete: Windows 11/JDK 17, Gradle 9.7, Android SDK, Docker engine through Ubuntu WSL, PostgreSQL exposed on host port 5435, API health/experiment CRUD, persistence across API restart, desktop REST/WebSocket relay and Android debug build. PRs #14–#17 are merged, including S3-compatible storage, abandoned-upload cleanup, offline MCAP ingestion and provenance manifest v2. **The combined PostgreSQL V4/RustFS workflow and gateway-to-Ktor/RustFS synthetic MCAP import have not yet been smoke-tested on the user's PC.** When the workstation is available, ask the user to pull current `main`, preserve the existing PostgreSQL/object-store volumes, and run both local tests. Do not ask them to pull an unmerged feature branch.
+The user wants to be told explicitly when to pull the code onto their Windows PC and open it in Cursor. The earlier local baseline is complete: Windows 11/JDK 17, Gradle 9.7, Android SDK, Docker engine through Ubuntu WSL, PostgreSQL exposed on host port 5435, API health/experiment CRUD, persistence across API restart, desktop REST/WebSocket relay and Android debug build. PRs #14–#18 are merged, including S3-compatible storage, abandoned-upload cleanup, offline MCAP ingestion, provenance manifest v2 and the separate sensor-observation REST/WebSocket contract. **The combined PostgreSQL V4/RustFS workflow and gateway-to-Ktor/RustFS synthetic MCAP import have not yet been smoke-tested on the user's PC.** When the workstation is available, ask the user to pull current `main`, preserve the existing PostgreSQL/object-store volumes, and run both local tests. Do not ask them to pull an unmerged feature branch.
 
 Keep this handoff and roadmap current after substantial milestones. Record commit SHAs, PR links, CI runs, implemented work, limitations and the next exact task. Never claim a test passed without checking its run.
 
@@ -121,6 +122,10 @@ Automated tests cover MCAP inspection, zero publish-time handling, manifest sche
 
 This is offline MCAP ingestion only. Live ROS 2 subscriptions, CDR payload decoding, conversion into the dashboard `RobotTelemetry` model, live bounded buffering/reconnection, ROS bag ingestion and real-sensor validation remain outstanding. The manifest distinguishes `dataOrigin` (`PHYSICAL_SENSOR`, `SIMULATED`, `DATASET`, `UNKNOWN`) from `ingestionMode` (`RECORDED`); it never assumes an MCAP file is physical sensor data. Frame IDs or units embedded inside serialized payloads are not decoded in this increment; the original recording remains untouched.
 
+### Sensor Observation API v1 — PR #18 merged
+
+The API now accepts compact decoded sensor observations at `POST /api/v1/robots/{robotId}/observations` and broadcasts them on `WS /api/v1/robots/{robotId}/observations/stream`. This is additive; the existing full `telemetry.snapshot` contract remains unchanged. The envelope preserves source ID, ROS topic/type, sensor category, per-source/topic sequence, optional frame IDs, units, declared data origin, source timestamp plus clock domain, and edge-gateway Unix receive time. Payload JSON is limited to 64 KiB. The hub is bounded and in-memory only; high-bandwidth raw data remains in MCAP/object storage. PR #18 merged as `aadd2f04cadc7f1cf96f4ba34db1e0a3f9e71ec6`; [GitHub Actions Run #243](https://github.com/samsonnjaji/neuromorphic-robot-console/actions/runs/43807192758) passed.
+
 ## 4. Current limitations — do not misrepresent
 
 - No authentication or device credential flow.
@@ -131,7 +136,7 @@ This is offline MCAP ingestion only. Live ROS 2 subscriptions, CDR payload decod
 - The cleanup worker is a single API-process service. Object deletion is idempotent and retryable; multi-tenant quotas and verified-object lifecycle policies remain future work.
 - Desktop API relay mode uses synthetic telemetry; no real robot is connected.
 - Android API integration is not implemented; Android currently uses simulator mode.
-- No live ROS 2 subscriptions/decoder, web client or Python inference runtime yet. Offline MCAP ingestion v1 is merged via PR #16; provenance manifest v2 and the labelled synthetic fixture are merged via PR #17. The local gateway-to-Ktor/RustFS synthetic import remains unverified on the user's PC.
+- No live ROS 2 subscriptions/decoder, web client or Python inference runtime yet. Offline MCAP ingestion v1 is merged via PR #16; provenance manifest v2 and the labelled synthetic fixture are merged via PR #17; the separate bounded sensor-observation REST/WebSocket API is merged via PR #18. Sensor observations are currently in-memory fan-out only, not durable history. The local gateway-to-Ktor/RustFS synthetic import remains unverified on the user's PC.
 - Robustness Lab profiles are deterministic synthetic perturbations, not calibrated weather physics or measured model accuracy.
 - NRC is not a safety-rated robot controller.
 
@@ -140,8 +145,8 @@ This is offline MCAP ingestion only. Live ROS 2 subscriptions, CDR payload decod
 1. When the user's workstation is available, ask them to pull the latest `main` into the Windows checkout. Preserve the existing PostgreSQL and RustFS volumes; keep host port 5435 if native PostgreSQL owns 5432.
 2. Run the combined local storage smoke test for Flyway V4, RustFS upload/download, SHA-256 verification and abandoned-upload cleanup.
 3. Run the synthetic MCAP end-to-end smoke test against the local Ktor/RustFS stack, with `--data-origin SIMULATED`.
-4. Record the actual local results in this handoff; do not claim real-sensor validation from the synthetic fixture.
-5. Design a separate, versioned sensor-observation contract so live ROS 2 data does not have to be padded into the existing full dashboard snapshot.
+4. POST one synthetic IMU observation to `/api/v1/robots/{robotId}/observations` and verify the accepted response. The observation WebSocket is separate from the existing snapshot stream.
+5. Record the actual local results in this handoff; do not claim real-sensor validation from the synthetic fixture.
 6. Implement explicitly configured, read-only ROS 2 subscriptions with MCAP recording, selected CDR decoding, bounded buffering/backpressure and reconnect behavior.
 7. Validate one real sensor recording before starting inference-worker comparisons.
 
@@ -149,7 +154,7 @@ This is offline MCAP ingestion only. Live ROS 2 subscriptions, CDR payload decod
 
 The user's Windows checkout is C:\\Users\\njaji\\Projects\\neuromorphic-robot-console. Docker is available through Ubuntu WSL; Windows PowerShell does not expose docker.exe. Native PostgreSQL owns host port 5432, so the NRC container is exposed on host port 5435.
 
-PRs #15, #16 and #17 are already merged; the following procedure applies to current `main`:
+PRs #15–#18 are already merged; the following procedure applies to current `main`:
 
 1. In PowerShell at the repository root:
    ```powershell
@@ -226,6 +231,8 @@ The import must return an experiment ID, run ID, recording-session ID, MCAP arti
 - `services/edge-gateway/` — Python offline MCAP inspection and ingestion CLI.
 - `docs/EDGE_GATEWAY.md` — edge-gateway scope, data flow and next increments.
 - `schemas/edge-recording-manifest.v2.schema.json` — current MCAP provenance contract; v1 remains historical and unchanged.
+- `schemas/sensor-observation-envelope.v1.schema.json` — bounded decoded sensor-event contract.
+- `core/nrc-core/src/commonMain/kotlin/com/samsonnjaji/nrc/domain/transport/SensorObservationStreamGuard.kt` — timestamp, payload-size and per-source/topic sequence validation.
 - `gradle/wrapper/` — pinned Gradle wrapper and checksums.
 
 ## 9. Working rules
