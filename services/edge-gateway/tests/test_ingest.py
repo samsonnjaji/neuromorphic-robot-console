@@ -8,6 +8,7 @@ from typing import Any
 from mcap.writer import CompressionType, Writer
 
 from nrc_edge_gateway.ingest import NrcMcapIngestor
+from nrc_edge_gateway.synthetic_fixture import create_synthetic_mcap
 
 
 def write_fixture(path: Path) -> None:
@@ -151,8 +152,6 @@ class IngestWorkflowTests(unittest.TestCase):
     def test_synthetic_fixture_cannot_be_labelled_physical_or_dataset(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "synthetic.mcap"
-            from nrc_edge_gateway.synthetic_fixture import create_synthetic_mcap
-
             create_synthetic_mcap(path, message_count=2)
             for origin in ("PHYSICAL_SENSOR", "DATASET"):
                 with self.subTest(origin=origin):
