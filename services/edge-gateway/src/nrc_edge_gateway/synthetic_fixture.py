@@ -41,8 +41,6 @@ def create_synthetic_mcap(
             metadata={
                 "data_origin": "SIMULATED",
                 "fixture": "synthetic",
-                "frame_id": "base_link",
-                "unit": "none",
             },
         )
 
