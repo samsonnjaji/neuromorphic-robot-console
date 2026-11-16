@@ -13,7 +13,7 @@ NRC is one platform with shared experiment contracts and multiple clients:
 - **Web:** team collaboration, experiment registry and report review (planned).
 - **Shared core:** common domain models, validation, scenario logic and experiment metrics.
 - **Platform API:** experiment metadata, telemetry ingestion and live stream distribution.
-- **Edge gateway:** Python offline MCAP inspection and verified recording ingestion v1 (PR #16; CI/merge pending); live ROS 2 subscriptions and ROS bag decoding remain planned.
+- **Edge gateway:** Python offline MCAP inspection and recording-ingestion client v1; local API/RustFS end-to-end verification and live ROS 2 subscriptions remain outstanding.
 - **Inference runtime:** separate workers for conventional and spiking neural networks (planned).
 
 The target architecture is staged. A planned component is not considered implemented until it exists, builds and passes tests.
@@ -33,7 +33,7 @@ The target architecture is staged. A planned component is not considered impleme
 - Ktor Platform API MVP: health, experiment/run/recording lifecycle, telemetry ingestion and WebSocket fan-out.
 - PostgreSQL repositories for experiment definitions, experiment runs, recording-session metadata and artifact metadata, using HikariCP and Flyway migrations.
 - S3-compatible artifact storage with RustFS locally, presigned single-part/multipart uploads, and server-side size/SHA-256 verification.
-- Python edge-gateway CLI for offline MCAP inspection, channel/schema/timestamp indexing, versioned provenance manifests, and verified artifact upload (PR #16; CI/merge pending).
+- Python edge-gateway CLI for offline MCAP inspection, channel/schema/timestamp indexing, explicit source-origin labels, versioned provenance manifests, and verified artifact upload.
 - Background cleanup for expired pending/failed uploads, including multipart aborts and retryable object deletion.
 - Persistent experiment-run lifecycle with source-revision/configuration provenance and validated state transitions.
 - Recording-session metadata lifecycle for MCAP, ROSBAG2, NRC_JSONL and other recording formats.
@@ -42,7 +42,7 @@ The target architecture is staged. A planned component is not considered impleme
 - OpenAPI 3.1 route documentation and JSON Schema contract validation in CI.
 - Gradle 9.7.0 wrapper for reproducible local builds.
 
-**Current limitations:** the API has no user/device authentication yet and binds to localhost by default. Artifact upload is not yet integrated into the desktop/Android user interface. The offline MCAP importer in PR #16 indexes recording metadata and uploads untouched MCAP files; it does not decode CDR payloads or create live sensor telemetry. Live ROS 2 subscriptions/decoders, inference workers and the web client remain planned. Background cleanup applies to expired pending/failed uploads; retention policies for verified artifacts are not implemented. Live telemetry fan-out is in memory. Desktop API-relay mode is synthetic and read-only; it is not a real robot connection. Current robustness profiles are illustrative synthetic perturbations, not calibrated weather physics, measured model accuracy or safety certification.
+**Current limitations:** the API has no user/device authentication yet and binds to localhost by default. Artifact upload is not yet integrated into the desktop/Android user interface. The offline MCAP importer indexes recording metadata and uploads untouched MCAP files; it does not decode CDR payloads or create live sensor telemetry. Its manifest distinguishes physical-sensor, simulated, dataset and unknown origins from the recorded ingestion mode. Live ROS 2 subscriptions/decoders, inference workers and the web client remain planned. Background cleanup applies to expired pending/failed uploads; retention policies for verified artifacts are not implemented. Live telemetry fan-out is in memory. Desktop API-relay mode is synthetic and read-only; it is not a real robot connection. Current robustness profiles are illustrative synthetic perturbations, not calibrated weather physics, measured model accuracy or safety certification.
 
 ## Architecture and engineering plan
 
@@ -65,7 +65,8 @@ The target architecture is staged. A planned component is not considered impleme
 
 - [Telemetry envelope v1](schemas/telemetry-envelope.v1.schema.json)
 - [Experiment manifest v1](schemas/experiment-manifest.v1.schema.json)
-- [Edge recording manifest v1](schemas/edge-recording-manifest.v1.schema.json)
+- [Edge recording manifest v1 — historical](schemas/edge-recording-manifest.v1.schema.json)
+- [Edge recording manifest v2 — current](schemas/edge-recording-manifest.v2.schema.json)
 - [OpenAPI 3.1](docs/api/openapi.json)
 
 ## Safety

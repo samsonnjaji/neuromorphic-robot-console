@@ -70,9 +70,10 @@ This roadmap sequences platform work so that every phase produces a usable, test
 
 **Goal:** connect real robotics data without enabling control.
 
-- [x] Implement offline MCAP framing validation and channel/topic/schema indexing (edge-gateway v1; CI verification pending).
+- [x] Implement offline MCAP framing validation and channel/topic/schema indexing (merged PR #16; CI Run #116 passed).
 - [x] Preserve MCAP publish and log timestamps separately in nanoseconds, with channel message counts and sequence ranges.
-- [x] Generate a versioned provenance manifest and upload the original MCAP plus manifest through the verified artifact workflow.
+- [x] Generate a versioned provenance manifest with explicit data origin and recorded-ingestion mode; upload the original MCAP plus manifest through the verified artifact workflow.
+- [ ] Complete the local gateway-to-Ktor/RustFS synthetic MCAP smoke test.
 - [ ] Implement explicitly configured, read-only ROS 2 subscriptions.
 - [ ] Decode selected ROS 2 message types and preserve source timestamps, frame IDs, units and provenance.
 - [ ] Add bounded live buffering, explicit backpressure/drop metrics and reconnect behavior.

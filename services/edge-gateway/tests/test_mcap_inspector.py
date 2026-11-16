@@ -25,7 +25,11 @@ def write_fixture(path: Path) -> None:
             topic="/robot/state",
             message_encoding="cdr",
             schema_id=schema_id,
-            metadata={"frame_id": "base_link", "unit": "m"},
+            metadata={
+                "frame_id": "base_link",
+                "unit": "m",
+                "offered_qos_profiles": "[]",
+            },
         )
         writer.add_message(
             channel_id,
@@ -81,7 +85,7 @@ class McapInspectorTests(unittest.TestCase):
             path = Path(directory) / "zero-publish.mcap"
             with path.open("wb") as output:
                 writer = Writer(output, compression=CompressionType.NONE)
-                writer.start(profile="ros2", library="test")
+                writer.start(profile="", library="test")
                 channel_id = writer.register_channel(
                     topic="/robot/imu", message_encoding="cdr", schema_id=0
                 )
@@ -108,10 +112,13 @@ class McapInspectorTests(unittest.TestCase):
                 robot_id="robot-01",
                 source_id="lab-source",
                 recorded_at_unix_ms=1_794_810_000_000,
+                data_origin="SIMULATED",
             )
+            self.assertEqual(manifest["dataOrigin"], "SIMULATED")
+            self.assertEqual(manifest["ingestionMode"], "RECORDED")
             schema_path = (
                 Path(__file__).resolve().parents[3]
-                / "schemas/edge-recording-manifest.v1.schema.json"
+                / "schemas/edge-recording-manifest.v2.schema.json"
             )
             schema = json.loads(schema_path.read_text(encoding="utf-8"))
             Draft202012Validator(schema).validate(manifest)
@@ -125,7 +132,7 @@ class McapInspectorTests(unittest.TestCase):
                     compression=CompressionType.NONE,
                     use_chunking=False,
                 )
-                writer.start(profile="ros2", library="file-order-test")
+                writer.start(profile="", library="file-order-test")
                 channel_id = writer.register_channel(
                     topic="/robot/pose", message_encoding="cdr", schema_id=0
                 )
@@ -151,6 +158,24 @@ class McapInspectorTests(unittest.TestCase):
             self.assertEqual(channel["lastSequence"], 10)
             self.assertEqual(result.min_log_time_unix_ns, 100)
             self.assertEqual(result.max_log_time_unix_ns, 200)
+
+    def test_manifest_defaults_to_unknown_origin(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "fixture.mcap"
+            write_fixture(path)
+            manifest = McapInspector().inspect(path).manifest(robot_id="robot-01")
+            self.assertEqual(manifest["dataOrigin"], "UNKNOWN")
+            self.assertEqual(manifest["ingestionMode"], "RECORDED")
+
+    def test_rejects_invalid_data_origin(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "fixture.mcap"
+            write_fixture(path)
+            with self.assertRaises(ValueError):
+                McapInspector().inspect(path).manifest(
+                    robot_id="robot-01",
+                    data_origin="REALISH",
+                )
 
     def test_rejects_non_mcap_input(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

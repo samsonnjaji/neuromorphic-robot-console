@@ -1,7 +1,7 @@
 # NRC Platform Architecture
 
 **Status:** Target architecture, accepted and being implemented in validated stages  
-**Current baseline:** Kotlin Multiplatform core, Android/desktop simulator clients, Ktor API MVP, PostgreSQL experiment/run/recording/artifact metadata, S3-compatible artifact upload with background cleanup, validated local desktop relay, and Python offline MCAP inspection/ingestion v1  
+**Current baseline:** Kotlin Multiplatform core, Android/desktop simulator clients, Ktor API MVP, PostgreSQL experiment/run/recording/artifact metadata, S3-compatible artifact upload with background cleanup, validated local desktop relay, and Python offline MCAP inspection/ingestion v1 (PR #16 merged; CI Run #116 passed)  
 **Architecture principle:** one shared robotics intelligence and experiment model, multiple clients and deployment modes.
 
 ## 1. Product boundary
@@ -110,7 +110,7 @@ Implemented in MCAP ingestion v1:
 - Validate MCAP framing and index channels, topics, message encodings and available schema metadata.
 - Preserve source publish timestamps and recorder log timestamps separately in nanoseconds.
 - Preserve per-channel message counts and sequence ranges.
-- Compute streaming SHA-256 and upload the untouched MCAP plus a versioned provenance manifest.
+- Compute streaming SHA-256 and upload the untouched MCAP plus a versioned provenance manifest with explicit physical/simulated/dataset/unknown origin.
 - Register the recording through the existing experiment, recording-session and artifact APIs.
 
 Planned live-gateway responsibilities:
@@ -277,7 +277,7 @@ neuromorphic-robot-console/
 | Local PostgreSQL Docker Compose setup | Implemented |
 | Authentication and organisation access controls | Planned |
 | S3-compatible recording storage | Implemented; CI verified, local smoke test pending |
-| Offline MCAP inspection and verified artifact ingestion | Implemented in edge-gateway v1; CI verification pending |
+| Offline MCAP inspection and verified artifact ingestion | Implemented; CI Run #116 passed; local gateway-to-API/RustFS smoke test pending |
 | Live ROS 2 subscriptions and message decoding | Planned |
 | Python inference workers | Planned |
 | Web client | Planned |

@@ -8,12 +8,13 @@ from typing import Any
 from mcap.writer import CompressionType, Writer
 
 from nrc_edge_gateway.ingest import NrcMcapIngestor
+from nrc_edge_gateway.synthetic_fixture import create_synthetic_mcap
 
 
 def write_fixture(path: Path) -> None:
     with path.open("wb") as output:
         writer = Writer(output, compression=CompressionType.NONE)
-        writer.start(profile="ros2", library="ingest-test")
+        writer.start(profile="", library="ingest-test")
         channel_id = writer.register_channel(
             topic="/robot/imu", message_encoding="cdr", schema_id=0
         )
@@ -76,15 +77,17 @@ class IngestWorkflowTests(unittest.TestCase):
 
             result = NrcMcapIngestor(api).ingest(
                 path,
-                robot_id="lab-robot-01",
-                source_id="lab-source-01",
+                robot_id=" lab-robot-01 ",
+                source_id=" lab-source-01 ",
                 scenario="HEAVY_RAIN",
+                data_origin="SIMULATED",
             )
 
             self.assertEqual(result.experiment_id, "experiment-1")
             self.assertEqual(result.run_id, "run-1")
             self.assertEqual(result.recording_session_id, "recording-1")
-            self.assertEqual(result.manifest["dataOrigin"], "RECORDED")
+            self.assertEqual(result.manifest["dataOrigin"], "SIMULATED")
+            self.assertEqual(result.manifest["ingestionMode"], "RECORDED")
             self.assertEqual(result.manifest["messageCount"], 2)
             self.assertEqual(len(api.uploads), 2)
             self.assertEqual(api.uploads[0][1], "lab-run.mcap")
@@ -98,10 +101,20 @@ class IngestWorkflowTests(unittest.TestCase):
                 if path_value == "/api/v1/runs/run-1/recordings"
             )
             self.assertEqual(recording_create["format"], "MCAP")
+            self.assertEqual(recording_create["sourceId"], "lab-source-01")
+            self.assertEqual(recording_create["metadata"]["robotId"], "lab-robot-01")
+            self.assertEqual(recording_create["metadata"]["dataOrigin"], "SIMULATED")
             self.assertEqual(
                 recording_create["metadata"]["timestamps"]["unit"],
                 "nanoseconds",
             )
+
+            run_create = next(
+                payload
+                for path_value, payload in api.requests
+                if path_value == "/api/v1/experiments/experiment-1/runs"
+            )
+            self.assertEqual(run_create["configuration"]["robotId"], "lab-robot-01")
 
             final_run_transition = [
                 payload
@@ -110,6 +123,48 @@ class IngestWorkflowTests(unittest.TestCase):
             ][-1]
             self.assertEqual(final_run_transition["status"], "COMPLETED")
             self.assertFalse(final_run_transition["resultSummary"]["inferenceExecuted"])
+
+    def test_existing_experiment_uses_its_existing_scenario(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "dataset.mcap"
+            write_fixture(path)
+            api = FakeApi()
+
+            result = NrcMcapIngestor(api).ingest(
+                path,
+                robot_id="dataset-robot",
+                experiment_id="existing-experiment",
+                data_origin="DATASET",
+            )
+
+            self.assertEqual(result.experiment_id, "existing-experiment")
+            self.assertEqual(result.manifest["dataOrigin"], "DATASET")
+            self.assertFalse(
+                any(path_value == "/api/v1/experiments" for path_value, _ in api.requests)
+            )
+            self.assertTrue(
+                any(
+                    path_value == "/api/v1/experiments/existing-experiment/runs"
+                    for path_value, _ in api.requests
+                )
+            )
+
+    def test_synthetic_fixture_cannot_be_labelled_physical_or_dataset(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "synthetic.mcap"
+            create_synthetic_mcap(path, message_count=2)
+            for origin in ("PHYSICAL_SENSOR", "DATASET"):
+                with self.subTest(origin=origin):
+                    api = FakeApi()
+                    with self.assertRaisesRegex(ValueError, "synthetic-fixture marker"):
+                        NrcMcapIngestor(api).ingest(
+                            path,
+                            robot_id="nrc-demo-robot",
+                            scenario="CLEAR",
+                            data_origin=origin,
+                        )
+                    self.assertEqual(api.requests, [])
+                    self.assertEqual(api.uploads, [])
 
     def test_invalid_file_fails_before_creating_api_records(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
