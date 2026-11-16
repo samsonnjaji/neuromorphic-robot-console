@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -139,8 +139,16 @@ class McapInspection:
         recorded_at_unix_ms: int | None = None,
     ) -> dict[str, Any]:
         """Build the versioned provenance manifest for an NRC recording session."""
-        if not robot_id.strip():
+        normalized_robot_id = robot_id.strip()
+        normalized_source_id = (
+            source_id.strip()
+            if source_id is not None and source_id.strip()
+            else normalized_robot_id
+        )
+        if not normalized_robot_id:
             raise ValueError("robot_id must not be blank")
+        if len(normalized_robot_id) > 255 or len(normalized_source_id) > 255:
+            raise ValueError("robot_id and source_id must be at most 255 characters")
 
         return {
             "schemaVersion": 1,
@@ -151,12 +159,8 @@ class McapInspection:
                 else time.time_ns() // 1_000_000
             ),
             "dataOrigin": "RECORDED",
-            "robotId": robot_id.strip(),
-            "sourceId": (
-                source_id.strip()
-                if source_id is not None and source_id.strip()
-                else robot_id.strip()
-            ),
+            "robotId": normalized_robot_id,
+            "sourceId": normalized_source_id,
             "fileName": self.file_name,
             "fileSizeBytes": self.file_size_bytes,
             "sha256Hex": self.sha256_hex,
