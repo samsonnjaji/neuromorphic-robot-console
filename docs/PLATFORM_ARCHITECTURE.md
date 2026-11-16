@@ -1,7 +1,7 @@
 # NRC Platform Architecture
 
 **Status:** Target architecture, accepted and being implemented in validated stages  
-**Current baseline:** Kotlin Multiplatform core, Android/desktop simulator clients, Ktor API MVP, PostgreSQL experiment/run/recording/artifact metadata, S3-compatible artifact upload with background cleanup, validated local desktop relay, and Python offline MCAP inspection/ingestion v1 (PR #16 merged; CI Run #116 passed)  
+**Current baseline:** Kotlin Multiplatform core, Android/desktop simulator clients, Ktor API MVP, PostgreSQL experiment/run/recording/artifact metadata, S3-compatible artifact upload with background cleanup, validated local desktop relay, Python offline MCAP inspection/ingestion v1 with provenance v2 (PRs #16–#17 merged), and bounded sensor-observation REST/WebSocket fan-out (PR #18 merged; CI Run #243 passed)  
 **Architecture principle:** one shared robotics intelligence and experiment model, multiple clients and deployment modes.
 
 ## 1. Product boundary
@@ -85,8 +85,10 @@ The existing `composeApp` remains the Compose presentation/application module an
 - `GET /api/v1/experiments`.
 - `POST /api/v1/experiments`.
 - `GET /api/v1/experiments/{experimentId}`.
-- `POST /api/v1/robots/{robotId}/telemetry` for versioned telemetry ingestion.
-- `WS /api/v1/robots/{robotId}/stream` for live telemetry fan-out.
+- `POST /api/v1/robots/{robotId}/telemetry` for full dashboard snapshot ingestion.
+- `WS /api/v1/robots/{robotId}/stream` for dashboard snapshot fan-out.
+- `POST /api/v1/robots/{robotId}/observations` for bounded decoded sensor observations.
+- `WS /api/v1/robots/{robotId}/observations/stream` for separate sensor-observation fan-out.
 - Typed request validation, sequence validation and structured error responses.
 - In-memory repository for tests and no-database development.
 - PostgreSQL repositories for durable experiment definitions, experiment runs, recording-session metadata and artifact metadata, using HikariCP and Flyway migrations.
@@ -100,7 +102,9 @@ The existing `composeApp` remains the Compose presentation/application module an
 
 The clients must not connect directly to databases or inference workers.
 
-**Not implemented yet:** user/device authentication, organisation/tenant isolation, audit events, PostgreSQL-backed telemetry history, retention policies for verified artifacts, rate limits and production deployment hardening. Do not expose this unauthenticated MVP to a public network.
+Sensor-observation fan-out is bounded and in-memory only; it is not a durable per-sample history. Raw/high-bandwidth recordings remain in MCAP/object storage.
+
+**Not implemented yet:** live ROS 2 subscriptions/decoders, user/device authentication, organisation/tenant isolation, audit events, PostgreSQL-backed telemetry history, retention policies for verified artifacts, rate limits and production deployment hardening. Do not expose this unauthenticated MVP to a public network.
 
 ### C. NRC Edge Gateway — robot connectivity
 
