@@ -62,6 +62,18 @@ class NrcMcapIngestor:
     ) -> IngestResult:
         path = Path(file_path).expanduser()
         inspection = self.inspector.inspect(path)
+        is_synthetic_fixture = (
+            inspection.library.endswith("-synthetic-fixture")
+            or any(
+                channel.get("channelMetadata", {}).get("fixture") == "synthetic"
+                for channel in inspection.channels
+            )
+        )
+        if is_synthetic_fixture and data_origin in {"PHYSICAL_SENSOR", "DATASET"}:
+            raise ValueError(
+                "known synthetic MCAP fixtures cannot be labelled PHYSICAL_SENSOR or DATASET"
+            )
+
         manifest = inspection.manifest(
             robot_id=robot_id,
             source_id=source_id,
