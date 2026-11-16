@@ -146,7 +146,10 @@ class NrcMcapIngestor:
                     encoding="utf-8",
                 )
                 mcap_artifact = self.api.upload_artifact(
-                    recording_id, path, "application/octet-stream"
+                    recording_id,
+                    path,
+                    "application/octet-stream",
+                    sha256_hex=inspection.sha256_hex,
                 )
                 manifest_artifact = self.api.upload_artifact(
                     recording_id, manifest_path, "application/json"
