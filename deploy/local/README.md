@@ -366,3 +366,40 @@ This stops services but preserves named volumes. Do not use `down -v` unless you
 - The desktop API-relay mode uses synthetic telemetry to test the API path.
 - Android is not yet connected to the API.
 - Do not expose the API, database or object store to a network until authentication, TLS, access controls and deployment hardening are implemented.
+
+## 9. Verify the sensor-observation API
+
+With the API still running, send one compact synthetic IMU observation. This verifies the separate sensor-observation contract and POST route; it does not connect to a physical sensor or persist a telemetry history.
+
+```powershell
+$BaseUrl = "http://127.0.0.1:8080"
+$SourceId = "imu-smoke-" + [guid]::NewGuid().ToString("N")
+$ReceivedAtUnixNs = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds() * 1000000
+$Observation = @{
+    schemaVersion = 1
+    messageType = "sensor.observation"
+    robotId = "nrc-local-sensor"
+    sourceId = $SourceId
+    sensorType = "IMU"
+    topic = "/imu/data"
+    rosType = "sensor_msgs/msg/Imu"
+    sequence = 1
+    sourceTimestampNs = 123000000
+    sourceClock = "ROS_TIME"
+    receivedAtUnixNs = $ReceivedAtUnixNs
+    frameId = "imu_link"
+    dataOrigin = "SIMULATED"
+    units = @{
+        linear_acceleration = "m/s^2"
+        angular_velocity = "rad/s"
+    }
+    payload = @{
+        linearAcceleration = @{ x = 0.1; y = 0.2; z = 9.81 }
+        angularVelocity = @{ x = 0.0; y = 0.0; z = 0.01 }
+    }
+} | ConvertTo-Json -Depth 8
+
+Invoke-RestMethod -Method Post -Uri "$BaseUrl/api/v1/robots/nrc-local-sensor/observations" -ContentType "application/json" -Body $Observation
+```
+
+Expected response: `status = accepted`, `robotId = nrc-local-sensor`, the generated `sourceId`, `topic = /imu/data` and `sequence = 1`. The source timestamp is explicitly marked `ROS_TIME`; it is not treated as Unix time. The receive timestamp is the local edge-gateway wall clock in Unix nanoseconds. A unique source ID is generated for each run because sequence numbers are checked per source/topic. The WebSocket stream is `/api/v1/robots/nrc-local-sensor/observations/stream`.
