@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nrc-edge-gateway"
+version = "0.1.0"
+description = "Read-only MCAP recording inspection and ingestion for NRC"
+requires-python = ">=3.12"
+dependencies = ["mcap>=1.2,<2"]
+
+[project.optional-dependencies]
+test = ["jsonschema==4.23.0"]
+
+[project.scripts]
+nrc-edge = "nrc_edge_gateway.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
