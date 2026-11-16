@@ -23,6 +23,11 @@ CASES = (
         ROOT / "schemas/fixtures/edge-recording-manifest.v1.valid.json",
         ROOT / "schemas/fixtures/edge-recording-manifest.v1.invalid.json",
     ),
+    (
+        ROOT / "schemas/edge-recording-manifest.v2.schema.json",
+        ROOT / "schemas/fixtures/edge-recording-manifest.v2.valid.json",
+        ROOT / "schemas/fixtures/edge-recording-manifest.v2.invalid.json",
+    ),
 )
 OPENAPI_PATH = ROOT / "docs/api/openapi.json"
 
