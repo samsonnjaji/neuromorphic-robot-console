@@ -92,7 +92,7 @@ The versioned contract is [edge-recording-manifest.v1.schema.json](../../schemas
 - A publish timestamp of zero is counted as unavailable and is not replaced.
 - Channel metadata, including producer-supplied frame/unit hints, is retained as strings.
 - The gateway's `recordedAtUnixMs` is the time the manifest was generated; it is not a sensor timestamp.
-- `dataOrigin` is an explicit caller-supplied label: `PHYSICAL_SENSOR`, `SIMULATED`, `DATASET` or `UNKNOWN`. It is never inferred from the MCAP profile.
+- `dataOrigin` is an explicit caller-supplied label: `PHYSICAL_SENSOR`, `SIMULATED`, `DATASET` or `UNKNOWN`. It is never inferred from the MCAP profile. Known NRC synthetic-fixture markers cannot be labelled `PHYSICAL_SENSOR` or `DATASET`; this is an accidental-misclassification guard, not cryptographic origin attestation.
 - `ingestionMode` is `RECORDED`, describing the MCAP ingestion path rather than claiming the source was physical.
 
 This version indexes MCAP metadata only. Frame IDs or units embedded inside serialized message payloads are not decoded. They remain in the untouched original MCAP and will be interpreted by a later ROS 2 message-decoding adapter.
