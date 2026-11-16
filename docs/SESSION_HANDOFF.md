@@ -12,6 +12,7 @@
 **Cleanup PR CI:** [Run 69 — success](https://github.com/samsonnjaji/neuromorphic-robot-console/actions/runs/43714200783)  
 **Main CI:** [Run 70 — success](https://github.com/samsonnjaji/neuromorphic-robot-console/actions/runs/43714385506); [Run 71 — success](https://github.com/samsonnjaji/neuromorphic-robot-console/actions/runs/43714476010)  
 **Gateway PR CI:** [Run 116 — success](https://github.com/samsonnjaji/neuromorphic-robot-console/actions/runs/43804370558)  
+**Provenance PR:** [PR #17](https://github.com/samsonnjaji/neuromorphic-robot-console/pull/17), branch `feat/edge-provenance-demo-fixture`, head `e664e35885d676e9dd40717db0470d5c0638ef2a`; [CI Run 146](https://github.com/samsonnjaji/neuromorphic-robot-console/actions/runs/43805434032) was in progress at the last check.  
 **Security:** GitGuardian checks passed.
 
 ## 1. Instruction for the next ChatGPT session
@@ -126,11 +127,11 @@ This is offline MCAP ingestion only. Live ROS 2 subscriptions, CDR payload decod
 - API is a local MVP and binds to `127.0.0.1` by default.
 - PostgreSQL stores experiment definitions, run/recording metadata and artifact registry records. Raw recording binaries are stored in configured S3-compatible object storage, not PostgreSQL.
 - Telemetry WebSocket fan-out is in memory, not durable.
-- Background cleanup of expired pending/failed uploads is implemented on the active branch; retention policies for verified artifacts are not implemented yet.
+- Background cleanup of expired pending/failed uploads is merged into `main` via PR #15; retention policies for verified artifacts are not implemented yet.
 - The cleanup worker is a single API-process service. Object deletion is idempotent and retryable; multi-tenant quotas and verified-object lifecycle policies remain future work.
 - Desktop API relay mode uses synthetic telemetry; no real robot is connected.
 - Android API integration is not implemented; Android currently uses simulator mode.
-- No live ROS 2 subscriptions/decoder, web client or Python inference runtime yet. Offline MCAP ingestion v1 is under development on `feat/edge-mcap-ingestion-v1` and is not merged.
+- No live ROS 2 subscriptions/decoder, web client or Python inference runtime yet. Offline MCAP ingestion v1 is merged into `main` via PR #16; provenance hardening and the synthetic fixture are under review in PR #17.
 - Robustness Lab profiles are deterministic synthetic perturbations, not calibrated weather physics or measured model accuracy.
 - NRC is not a safety-rated robot controller.
 
