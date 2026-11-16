@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "messageType": "sensor.observation",
+  "robotId": "sim-robot-01",
+  "sourceId": "sim-run-01",
+  "sequence": 1,
+  "topic": "/status",
+  "messageTypeName": "std_msgs/msg/String",
+  "messageEncoding": "json",
+  "schemaName": null,
+  "schemaEncoding": null,
+  "sourceTimestampUnixNs": null,
+  "sourceClock": "UNKNOWN",
+  "receptionTimestampUnixNs": 1794810000000000100,
+  "frameId": null,
+  "units": {},
+  "dataOrigin": "SIMULATED",
+  "payload": {
+    "type": "inline",
+    "encoding": "json",
+    "data": {
+      "data": "synthetic heartbeat"
+    }
+  }
+}
