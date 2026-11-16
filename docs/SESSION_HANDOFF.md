@@ -1,9 +1,9 @@
 # NRC Session Handoff
 
-**Last updated:** 2026-11-15  
+**Last updated:** 2026-11-16  
 **Repository:** https://github.com/samsonnjaji/neuromorphic-robot-console  
 **Base branch:** `main`  
-**Active development branch:** `main`  
+**Active development branch:** `feat/edge-mcap-ingestion-v1` (remote implementation in progress; PR not yet opened)  
 **Artifact storage merge commit:** `3300de07779bc8c06329eeae97ee5c5ea8bca3ef`  
 **Artifact cleanup merge commit:** `e4c945f6aa9f8eaccfc816da48ac48ca92675e3e`  
 **Merged PRs:** [PR #14 — S3-compatible artifact storage](https://github.com/samsonnjaji/neuromorphic-robot-console/pull/14); [PR #15 — automatic abandoned-upload cleanup](https://github.com/samsonnjaji/neuromorphic-robot-console/pull/15)  
@@ -105,6 +105,16 @@ No remote robot actuation in the initial release. Any later control plane needs 
 - Run 66, final cleanup branch push including local setup documentation, passed the full workflow.
 - Run 67, PR #15 validation, passed the full workflow; GitGuardian Security Checks also passed.
 
+### Edge Gateway v1 — current remote branch, not yet merged
+
+Branch: `feat/edge-mcap-ingestion-v1`.
+
+The first Python gateway increment adds offline MCAP framing validation, channel/topic/schema indexing, per-channel message and sequence counts, separate publish/log timestamp ranges in nanoseconds, streaming SHA-256, a versioned recording manifest, and an NRC API client for single-part and multipart artifact upload. The ingestion workflow registers an experiment run and MCAP recording session, uploads the untouched MCAP plus manifest, and completes the run only after the API reports both artifacts `VERIFIED`.
+
+Automated tests cover MCAP inspection, zero publish-time handling, manifest schema validation, single/multipart upload planning and API lifecycle orchestration. CI verification is pending. This branch is not merged and must not be described as a released gateway.
+
+This is offline MCAP ingestion only. Live ROS 2 subscriptions, CDR payload decoding, conversion into the dashboard `RobotTelemetry` model, live bounded buffering/reconnection, ROS bag ingestion and real-sensor validation remain outstanding. Frame IDs or units embedded inside serialized payloads are not decoded in this increment; the original recording remains untouched.
+
 ## 4. Current limitations — do not misrepresent
 
 - No authentication or device credential flow.
@@ -115,7 +125,7 @@ No remote robot actuation in the initial release. Any later control plane needs 
 - The cleanup worker is a single API-process service. Object deletion is idempotent and retryable; multi-tenant quotas and verified-object lifecycle policies remain future work.
 - Desktop API relay mode uses synthetic telemetry; no real robot is connected.
 - Android API integration is not implemented; Android currently uses simulator mode.
-- No web client, ROS 2 gateway or Python inference runtime yet.
+- No live ROS 2 subscriptions/decoder, web client or Python inference runtime yet. Offline MCAP ingestion v1 is under development on `feat/edge-mcap-ingestion-v1` and is not merged.
 - Robustness Lab profiles are deterministic synthetic perturbations, not calibrated weather physics or measured model accuracy.
 - NRC is not a safety-rated robot controller.
 
@@ -125,7 +135,10 @@ No remote robot actuation in the initial release. Any later control plane needs 
 2. Tell the user to pull the merged `main` branch into Cursor. Preserve the existing local PostgreSQL volume and data; retain host port 5435 if native PostgreSQL still owns 5432.
 3. Run the combined Windows smoke test for Flyway V4, RustFS single-PUT upload, server-side SHA-256 verification, verified download and background cleanup startup.
 4. Fix local issues and update the handoff with the verified result.
-5. Implement the read-only ROS 2/MCAP edge gateway and connect a real sensor recording; keep inference workers and scientific model comparison sequenced behind validated ingestion.
+5. Finish CI verification and merge the offline MCAP ingestion v1 branch only after all checks pass.
+6. Ask the user to pull the merged main branch into Cursor for the pending Flyway V4/RustFS local smoke test; preserve existing PostgreSQL/RustFS volumes.
+7. Extend the gateway with live read-only ROS 2 subscriptions, selected CDR decoders, bounded buffering/backpressure and reconnect behavior; validate one real sensor recording.
+8. Keep inference workers and scientific model comparison sequenced behind validated ingestion.
 
 ## 6. Local testing instructions
 
@@ -191,6 +204,9 @@ Never run docker compose down -v during this test. The API and object store rema
 - `schemas/` — wire schemas and fixtures.
 - `services/platform-api/` — backend.
 - `deploy/local/README.md` — local PostgreSQL/RustFS/API/desktop/artifact upload instructions.
+- `services/edge-gateway/` — Python offline MCAP inspection and ingestion CLI.
+- `docs/EDGE_GATEWAY.md` — edge-gateway scope, data flow and next increments.
+- `schemas/edge-recording-manifest.v1.schema.json` — versioned MCAP provenance contract.
 - `gradle/wrapper/` — pinned Gradle wrapper and checksums.
 
 ## 8. Working rules
