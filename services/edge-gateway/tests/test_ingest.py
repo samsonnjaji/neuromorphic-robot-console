@@ -79,12 +79,14 @@ class IngestWorkflowTests(unittest.TestCase):
                 robot_id="lab-robot-01",
                 source_id="lab-source-01",
                 scenario="HEAVY_RAIN",
+                data_origin="SIMULATED",
             )
 
             self.assertEqual(result.experiment_id, "experiment-1")
             self.assertEqual(result.run_id, "run-1")
             self.assertEqual(result.recording_session_id, "recording-1")
-            self.assertEqual(result.manifest["dataOrigin"], "RECORDED")
+            self.assertEqual(result.manifest["dataOrigin"], "SIMULATED")
+            self.assertEqual(result.manifest["ingestionMode"], "RECORDED")
             self.assertEqual(result.manifest["messageCount"], 2)
             self.assertEqual(len(api.uploads), 2)
             self.assertEqual(api.uploads[0][1], "lab-run.mcap")
@@ -98,6 +100,7 @@ class IngestWorkflowTests(unittest.TestCase):
                 if path_value == "/api/v1/runs/run-1/recordings"
             )
             self.assertEqual(recording_create["format"], "MCAP")
+            self.assertEqual(recording_create["metadata"]["dataOrigin"], "SIMULATED")
             self.assertEqual(
                 recording_create["metadata"]["timestamps"]["unit"],
                 "nanoseconds",
