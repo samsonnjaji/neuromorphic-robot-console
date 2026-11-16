@@ -1,6 +1,6 @@
 # NRC Platform API reference
 
-The versioned OpenAPI 3.1 document is [openapi.json](openapi.json). It references the canonical telemetry envelope schema in `schemas/telemetry-envelope.v1.schema.json`.
+The versioned OpenAPI 3.1 document is [openapi.json](openapi.json). It references the canonical dashboard snapshot schema and the separate sensor-observation envelope schema.
 
 ## Implemented REST endpoints
 
