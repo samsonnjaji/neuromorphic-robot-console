@@ -30,6 +30,14 @@ MCAP `publish_time` and `log_time` are separate nanosecond values. A zero publis
 
 Generate a labelled test recording with `python services/edge-gateway/examples/create_synthetic_mcap.py --output ./synthetic-demo.mcap --messages 10`, inspect it with `nrc-edge inspect`, then ingest it against the local API with `--data-origin SIMULATED`. This validates the local API/object-storage path without physical hardware.
 
+## Read-only ROS 2 capture
+
+The initial live-capture path wraps the official rosbag2 recorder with the MCAP storage plugin. NRC requires an explicit topic allowlist, a fresh output directory and a bounded cache. The wrapper sends SIGINT for graceful bag finalization, locates the generated MCAP files and imports them through the existing artifact lifecycle. It does not publish ROS commands or actuate hardware. See the service README for the command and ROS 2 plugin setup.
+
+## Sensor observation contract
+
+Per-topic data is represented by [Sensor Observation Envelope v1](../schemas/sensor-observation.v1.schema.json), not coerced into the existing full RobotTelemetry snapshot. Source timestamp and reception timestamp remain separate; frame IDs and units are nullable/explicit; raw high-bandwidth payloads reference the MCAP artifact.
+
 ## Next work
 
 Live ROS 2 subscriptions, selected CDR decoders, normalized sensor adapters, bounded live buffering/backpressure, reconnection, and real-sensor validation remain planned. The gateway remains read-only; robot actuation is outside the initial platform release.
