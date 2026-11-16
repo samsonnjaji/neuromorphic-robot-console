@@ -14,7 +14,7 @@ from nrc_edge_gateway.synthetic_fixture import create_synthetic_mcap
 def write_fixture(path: Path) -> None:
     with path.open("wb") as output:
         writer = Writer(output, compression=CompressionType.NONE)
-        writer.start(profile="ros2", library="ingest-test")
+        writer.start(profile="", library="ingest-test")
         channel_id = writer.register_channel(
             topic="/robot/imu", message_encoding="cdr", schema_id=0
         )
