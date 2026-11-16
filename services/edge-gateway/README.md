@@ -82,6 +82,28 @@ If `--experiment-id` is omitted, the gateway creates an experiment with model id
 
 The gateway creates a run, transitions it to `RUNNING`, creates and finalizes an MCAP recording session, uploads the original file and manifest, then marks the run `COMPLETED`. If an upload fails, it attempts to mark the run `FAILED`; the original error is returned to the caller.
 
+## Live ROS 2 capture (Linux/WSL)
+
+The read-only capture command uses the ROS 2 rosbag2 recorder and its MCAP storage plugin. Install the plugin for the sourced ROS distribution, then run inside the ROS 2 environment:
+
+```bash
+sudo apt install ros-${ROS_DISTRO}-rosbag2-storage-mcap
+source /opt/ros/${ROS_DISTRO}/setup.bash
+nrc-edge ros2-capture \
+  --topics /imu/data /scan /odom \
+  --output ./bags/mission-001 \
+  --duration-seconds 30 \
+  --api-url http://127.0.0.1:8080 \
+  --robot-id lab-robot-01 \
+  --source-id mission-001 \
+  --scenario HEAVY_RAIN \
+  --data-origin PHYSICAL_SENSOR
+```
+
+The output directory must not already exist. The command records only the explicit topic allowlist; it does not use `--all`, publish commands or actuate the robot. If no duration is supplied, press Ctrl+C to stop and finalize the bag. The default rosbag2 cache is 64 MiB per buffer; rosbag2 double buffering may use up to twice that amount. Use `--max-cache-size-bytes 0` for direct-to-disk writes, or provide `--qos-profile-overrides-path` for topic-specific QoS. With `--use-sim-time`, recording waits for the first `/clock` message.
+
+After recording stops, NRC finds the generated MCAP file(s) and ingests them through the existing API/artifact workflow. If ingestion fails because the API is unavailable, the local MCAP files remain in the output directory and can be imported later with `nrc-edge ingest`. This is recorded capture and upload, not live dashboard telemetry or CDR decoding.
+
 ## Provenance and timestamps
 
 The current contract is [edge-recording-manifest.v2.schema.json](../../schemas/edge-recording-manifest.v2.schema.json). The v1 schema remains unchanged for historical compatibility.
@@ -114,6 +136,10 @@ The client uses bounded 1 MiB reads while sending each part. It does not print o
 - The gateway is read-only. There are no ROS 2 publishers, motion commands, motor-control interfaces or robot actuation paths.
 - Synthetic, dataset and physical-sensor origins must remain distinguishable. The manifest separates caller-supplied `dataOrigin` from the fixed `ingestionMode: RECORDED`, and explicitly records that inference was not executed.
 - A successful import proves file parsing and artifact integrity, not sensor calibration, model accuracy or robot safety.
+
+## Sensor observation contract
+
+The separate [Sensor Observation Envelope v1](../../schemas/sensor-observation.v1.schema.json) describes one topic observation without padding the existing aggregated RobotTelemetry snapshot. Large raw payloads reference the MCAP artifact, channel ID and message index. The schema does not add an API route or claim payload decoding.
 
 ## Next edge-gateway increments
 
