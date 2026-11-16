@@ -34,6 +34,12 @@ class SyntheticFixtureTests(unittest.TestCase):
                 manifest["channels"][0]["channelMetadata"]["data_origin"],
                 "SIMULATED",
             )
+            for invalid_origin in ("PHYSICAL_SENSOR", "DATASET"):
+                with self.assertRaises(ValueError):
+                    inspection.manifest(
+                        robot_id="nrc-demo-robot",
+                        data_origin=invalid_origin,
+                    )
 
             schema_path = (
                 Path(__file__).resolve().parents[3]
