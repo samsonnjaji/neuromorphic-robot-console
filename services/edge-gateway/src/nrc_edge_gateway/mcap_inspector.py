@@ -151,8 +151,12 @@ class McapInspection:
                 else time.time_ns() // 1_000_000
             ),
             "dataOrigin": "RECORDED",
-            "robotId": robot_id,
-            "sourceId": source_id or robot_id,
+            "robotId": robot_id.strip(),
+            "sourceId": (
+                source_id.strip()
+                if source_id is not None and source_id.strip()
+                else robot_id.strip()
+            ),
             "fileName": self.file_name,
             "fileSizeBytes": self.file_size_bytes,
             "sha256Hex": self.sha256_hex,
