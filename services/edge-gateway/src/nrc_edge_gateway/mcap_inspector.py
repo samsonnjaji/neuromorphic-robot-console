@@ -222,7 +222,9 @@ class McapInspector:
                     or ""
                 )
 
-                for schema, channel, message in reader.iter_messages():
+                # Preserve file order and stream records; log-time sorting can materialize an entire
+                # unchunked recording in memory in the MCAP reader implementation.
+                for schema, channel, message in reader.iter_messages(log_time_order=False):
                     channel_id = int(channel.id)
                     accumulator = channels.get(channel_id)
                     if accumulator is None:
