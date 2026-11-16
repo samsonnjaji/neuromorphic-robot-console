@@ -13,7 +13,7 @@ NRC is one platform with shared experiment contracts and multiple clients:
 - **Web:** team collaboration, experiment registry and report review (planned).
 - **Shared core:** common domain models, validation, scenario logic and experiment metrics.
 - **Platform API:** experiment metadata, telemetry ingestion and live stream distribution.
-- **Edge gateway:** Python offline MCAP inspection and verified recording ingestion v1; live ROS 2 subscriptions and ROS bag decoding remain planned.
+- **Edge gateway:** Python offline MCAP inspection and recording-ingestion client v1; local API/RustFS end-to-end verification and live ROS 2 subscriptions remain outstanding.
 - **Inference runtime:** separate workers for conventional and spiking neural networks (planned).
 
 The target architecture is staged. A planned component is not considered implemented until it exists, builds and passes tests.
