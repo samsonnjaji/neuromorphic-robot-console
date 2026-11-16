@@ -111,7 +111,7 @@ No remote robot actuation in the initial release. Any later control plane needs 
 
 ### Edge Gateway v1 — PR #16 merged
 
-PR #16 delivers the offline MCAP importer. The main-branch manifest in PR #16 uses a recorded-ingestion label; PR #17 is open to separate source origin (`PHYSICAL_SENSOR`, `SIMULATED`, `DATASET`, `UNKNOWN`) from ingestion mode (`RECORDED`) and add a labelled synthetic MCAP fixture generator. Do not treat that follow-up as merged until its PR and CI pass.
+PR #16 delivers the offline MCAP importer. The main-branch manifest in PR #16 uses a recorded-ingestion label; PR #17 is open to add immutable `edge-recording-manifest.v2`, separating source origin (`PHYSICAL_SENSOR`, `SIMULATED`, `DATASET`, `UNKNOWN`) from ingestion mode (`RECORDED`), plus a labelled synthetic MCAP fixture generator. The original v1 schema remains unchanged. Do not treat that follow-up as merged until its PR and CI pass.
 
 Branch: `feat/edge-mcap-ingestion-v1`.
 
