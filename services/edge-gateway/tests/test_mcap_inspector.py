@@ -25,7 +25,11 @@ def write_fixture(path: Path) -> None:
             topic="/robot/state",
             message_encoding="cdr",
             schema_id=schema_id,
-            metadata={"frame_id": "base_link", "unit": "m"},
+            metadata={
+                "frame_id": "base_link",
+                "unit": "m",
+                "offered_qos_profiles": "[]",
+            },
         )
         writer.add_message(
             channel_id,
@@ -81,7 +85,7 @@ class McapInspectorTests(unittest.TestCase):
             path = Path(directory) / "zero-publish.mcap"
             with path.open("wb") as output:
                 writer = Writer(output, compression=CompressionType.NONE)
-                writer.start(profile="ros2", library="test")
+                writer.start(profile="", library="test")
                 channel_id = writer.register_channel(
                     topic="/robot/imu", message_encoding="cdr", schema_id=0
                 )
@@ -128,7 +132,7 @@ class McapInspectorTests(unittest.TestCase):
                     compression=CompressionType.NONE,
                     use_chunking=False,
                 )
-                writer.start(profile="ros2", library="file-order-test")
+                writer.start(profile="", library="file-order-test")
                 channel_id = writer.register_channel(
                     topic="/robot/pose", message_encoding="cdr", schema_id=0
                 )
