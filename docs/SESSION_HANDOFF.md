@@ -4,7 +4,7 @@
 **Repository:** https://github.com/samsonnjaji/neuromorphic-robot-console  
 **Base branch:** `main`  
 **Main commit:** `dae6fa3cd4badc9196ccd296eae77dbe7f4d65ff`  
-**Active development branch:** `feat/edge-provenance-demo-fixture` (remote implementation in progress; PR not yet opened)  
+**Active development branch:** `feat/edge-provenance-demo-fixture` (remote provenance hardening and synthetic-fixture work in progress; PR pending)  
 **Artifact storage merge commit:** `3300de07779bc8c06329eeae97ee5c5ea8bca3ef`  
 **Artifact cleanup merge commit:** `e4c945f6aa9f8eaccfc816da48ac48ca92675e3e`  
 **Merged PRs:** [PR #14 — S3-compatible artifact storage](https://github.com/samsonnjaji/neuromorphic-robot-console/pull/14); [PR #15 — automatic abandoned-upload cleanup](https://github.com/samsonnjaji/neuromorphic-robot-console/pull/15); [PR #16 — offline MCAP ingestion gateway](https://github.com/samsonnjaji/neuromorphic-robot-console/pull/16)  
@@ -110,6 +110,8 @@ No remote robot actuation in the initial release. Any later control plane needs 
 
 ### Edge Gateway v1 — PR #16 merged
 
+PR #16 delivers the offline MCAP importer. The main-branch manifest in PR #16 uses a recorded-ingestion label; the active provenance-hardening branch separates source origin (`PHYSICAL_SENSOR`, `SIMULATED`, `DATASET`, `UNKNOWN`) from ingestion mode (`RECORDED`) and adds a synthetic MCAP fixture generator. Do not treat that follow-up as merged until its PR and CI pass.
+
 Branch: `feat/edge-mcap-ingestion-v1`.
 
 The first Python gateway increment adds offline MCAP framing validation, channel/topic/schema indexing, per-channel message and sequence counts, separate publish/log timestamp ranges in nanoseconds, streaming SHA-256, a versioned recording manifest, and an NRC API client for single-part and multipart artifact upload. The ingestion workflow registers an experiment run and MCAP recording session, uploads the untouched MCAP plus manifest, and completes the run only after the API reports both artifacts `VERIFIED`.
@@ -194,7 +196,21 @@ PRs #15 and #16 are already merged; the following procedure applies to current `
 
 Never run docker compose down -v during this test. The API and object store remain localhost-only and unauthenticated. The desktop API relay is still synthetic and read-only; it is not a physical robot connection.
 
-## 7. Key files
+## 7. Edge gateway synthetic MCAP smoke test
+
+After the Platform API is running locally with PostgreSQL and RustFS configured, open a second PowerShell terminal at the repository root. Python 3.12 or newer is required:
+
+```powershell
+python --version
+python -m pip install -e services/edge-gateway
+python services/edge-gateway/examples/create_synthetic_mcap.py --output .\\synthetic-demo.mcap --messages 10
+nrc-edge inspect .\\synthetic-demo.mcap
+nrc-edge ingest .\\synthetic-demo.mcap --api-url http://127.0.0.1:8080 --robot-id nrc-demo-robot --source-id synthetic-fixture --scenario CLEAR --data-origin SIMULATED
+```
+
+The import must return an experiment ID, run ID, recording-session ID, MCAP artifact ID and manifest artifact ID. The CLI only exits successfully after both artifacts are `VERIFIED` and the run reaches `COMPLETED`. This is a synthetic integration fixture, not a physical robot test. Preserve the local PostgreSQL/RustFS volumes throughout.
+
+## 8. Key files
 
 - `docs/PLATFORM_ARCHITECTURE.md` — target and current architecture.
 - `docs/PLATFORM_ROADMAP.md` — milestones and completion state.
@@ -211,7 +227,7 @@ Never run docker compose down -v during this test. The API and object store rema
 - `schemas/edge-recording-manifest.v1.schema.json` — versioned MCAP provenance contract.
 - `gradle/wrapper/` — pinned Gradle wrapper and checksums.
 
-## 8. Working rules
+## 9. Working rules
 
 - Inspect current source before editing; do not guess repository contents.
 - Prefer small, reviewable commits with one responsibility each.
