@@ -1,6 +1,6 @@
 # NRC Edge Gateway — MCAP ingestion v1
 
-This package is the first independently testable edge-gateway increment. It inspects recorded MCAP files and registers the original recording plus a versioned provenance manifest through the existing NRC Platform API.
+This package provides NRC's offline MCAP recording importer. It inspects recorded MCAP files and registers the original recording plus a versioned provenance manifest through the existing NRC Platform API.
 
 It is an **offline, read-only recording importer**. It does not yet subscribe to live ROS 2 topics, decode ROS 2 CDR payloads, convert sensor messages into dashboard telemetry, or issue robot commands.
 
@@ -43,6 +43,28 @@ nrc-edge inspect ./recording.mcap
 
 This validates the file and prints a summary containing the SHA-256 digest, channel/topic inventory, message counts and separate timestamp ranges. It does not contact the Platform API.
 
+## Generate a synthetic local test recording
+
+The repository includes a fixture generator for validating the importer without hardware. Its output is explicitly synthetic and must not be reported as physical sensor data.
+
+```bash
+python services/edge-gateway/examples/create_synthetic_mcap.py --output ./synthetic-demo.mcap --messages 10
+nrc-edge inspect ./synthetic-demo.mcap
+```
+
+To ingest this fixture into a running local NRC API, use `--data-origin SIMULATED`:
+
+```bash
+nrc-edge ingest ./synthetic-demo.mcap \
+  --api-url http://127.0.0.1:8080 \
+  --robot-id nrc-demo-robot \
+  --source-id synthetic-fixture \
+  --scenario CLEAR \
+  --data-origin SIMULATED
+```
+
+The CLI reports both artifact IDs and returns success only after the API reports both artifacts `VERIFIED`. This tests the gateway-to-API/object-store path with synthetic data; it does not validate a physical sensor.
+
 ## Ingest a recording into NRC
 
 Start the local NRC PostgreSQL and RustFS services and Platform API using [the local development guide](../../deploy/local/README.md). The API must be reachable on loopback and configured with both PostgreSQL and S3-compatible object storage.
@@ -52,10 +74,11 @@ nrc-edge ingest ./recording.mcap \
   --api-url http://127.0.0.1:8080 \
   --robot-id lab-robot-01 \
   --source-id lab-session-2026-11-16 \
-  --scenario HEAVY_RAIN
+  --scenario HEAVY_RAIN \
+  --data-origin PHYSICAL_SENSOR
 ```
 
-If `--experiment-id` is omitted, the gateway creates an experiment with model identity `not-evaluated`, because this workflow imports a recording and does not run perception inference. Supply an existing `--experiment-id` to attach the recording to an existing experiment. The selected scenario must be one of the NRC API's existing values: `CLEAR`, `HEAVY_RAIN`, `FOG`, `LOW_LIGHT` or `DUST_SMOKE`.
+If `--experiment-id` is omitted, the gateway creates an experiment with model identity `not-evaluated`, because this workflow imports a recording and does not run perception inference. Supply an existing `--experiment-id` to attach the recording to an existing experiment. The selected scenario must be one of the NRC API's existing values: `CLEAR`, `HEAVY_RAIN`, `FOG`, `LOW_LIGHT` or `DUST_SMOKE`. When attaching to an existing experiment with `--experiment-id`, omit `--scenario`; the existing experiment owns its scenario. `--data-origin` accepts `PHYSICAL_SENSOR`, `SIMULATED`, `DATASET` or `UNKNOWN` and defaults to `UNKNOWN`.
 
 The gateway creates a run, transitions it to `RUNNING`, creates and finalizes an MCAP recording session, uploads the original file and manifest, then marks the run `COMPLETED`. If an upload fails, it attempts to mark the run `FAILED`; the original error is returned to the caller.
 
@@ -69,6 +92,8 @@ The versioned contract is [edge-recording-manifest.v1.schema.json](../../schemas
 - A publish timestamp of zero is counted as unavailable and is not replaced.
 - Channel metadata, including producer-supplied frame/unit hints, is retained as strings.
 - The gateway's `recordedAtUnixMs` is the time the manifest was generated; it is not a sensor timestamp.
+- `dataOrigin` is an explicit caller-supplied label: `PHYSICAL_SENSOR`, `SIMULATED`, `DATASET` or `UNKNOWN`. It is never inferred from the MCAP profile.
+- `ingestionMode` is `RECORDED`, describing the MCAP ingestion path rather than claiming the source was physical.
 
 This version indexes MCAP metadata only. Frame IDs or units embedded inside serialized message payloads are not decoded. They remain in the untouched original MCAP and will be interpreted by a later ROS 2 message-decoding adapter.
 
@@ -87,7 +112,7 @@ The client uses bounded 1 MiB reads while sending each part. It does not print o
 - The current Platform API is an unauthenticated local MVP. Keep it bound to loopback; do not expose it to a public or shared network.
 - Use only trusted local recordings and a trusted API endpoint.
 - The gateway is read-only. There are no ROS 2 publishers, motion commands, motor-control interfaces or robot actuation paths.
-- Synthetic, recorded and measured data must remain distinguishable. This importer labels its source as `RECORDED` and explicitly records that inference was not executed.
+- Synthetic, dataset and physical-sensor origins must remain distinguishable. The manifest separates caller-supplied `dataOrigin` from the fixed `ingestionMode: RECORDED`, and explicitly records that inference was not executed.
 - A successful import proves file parsing and artifact integrity, not sensor calibration, model accuracy or robot safety.
 
 ## Next edge-gateway increments
