@@ -156,7 +156,7 @@ class IngestWorkflowTests(unittest.TestCase):
             for origin in ("PHYSICAL_SENSOR", "DATASET"):
                 with self.subTest(origin=origin):
                     api = FakeApi()
-                    with self.assertRaisesRegex(ValueError, "synthetic MCAP fixtures"):
+                    with self.assertRaisesRegex(ValueError, "synthetic-fixture marker"):
                         NrcMcapIngestor(api).ingest(
                             path,
                             robot_id="nrc-demo-robot",
