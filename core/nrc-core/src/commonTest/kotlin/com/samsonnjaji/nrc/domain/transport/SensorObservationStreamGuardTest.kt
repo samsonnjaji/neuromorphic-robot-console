@@ -1,5 +1,6 @@
 package com.samsonnjaji.nrc.domain.transport
 
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -30,14 +31,14 @@ class SensorObservationStreamGuardTest {
         ),
         payload = buildJsonObject {
             put("linearAcceleration", buildJsonObject {
-                put("x", 0.1)
-                put("y", 0.2)
-                put("z", 9.81)
+                put("x", JsonPrimitive(0.1))
+                put("y", JsonPrimitive(0.2))
+                put("z", JsonPrimitive(9.81))
             })
             put("angularVelocity", buildJsonObject {
-                put("x", 0.0)
-                put("y", 0.0)
-                put("z", 0.01)
+                put("x", JsonPrimitive(0.0))
+                put("y", JsonPrimitive(0.0))
+                put("z", JsonPrimitive(0.01))
             })
         }
     )
@@ -153,7 +154,7 @@ class SensorObservationStreamGuardTest {
             guard.validate(observation().copy(payload = buildJsonObject {}))
         )
         val largePayload = buildJsonObject {
-            put("blob", "x".repeat(NRC_SENSOR_OBSERVATION_MAX_PAYLOAD_BYTES + 1))
+            put("blob", JsonPrimitive("x".repeat(NRC_SENSOR_OBSERVATION_MAX_PAYLOAD_BYTES + 1)))
         }
         assertEquals(
             SensorObservationValidation.PAYLOAD_TOO_LARGE,
