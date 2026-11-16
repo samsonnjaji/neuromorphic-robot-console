@@ -28,6 +28,11 @@ CASES = (
         ROOT / "schemas/fixtures/edge-recording-manifest.v2.valid.json",
         ROOT / "schemas/fixtures/edge-recording-manifest.v2.invalid.json",
     ),
+    (
+        ROOT / "schemas/sensor-observation-envelope.v1.schema.json",
+        ROOT / "schemas/fixtures/sensor-observation-envelope.v1.valid.json",
+        ROOT / "schemas/fixtures/sensor-observation-envelope.v1.invalid.json",
+    ),
 )
 OPENAPI_PATH = ROOT / "docs/api/openapi.json"
 
@@ -59,6 +64,7 @@ def validate_openapi() -> None:
         "/api/v1/experiments",
         "/api/v1/experiments/{experimentId}",
         "/api/v1/robots/{robotId}/telemetry",
+        "/api/v1/robots/{robotId}/observations",
     }
     missing = required_paths.difference(spec.get("paths", {}))
     if missing:
@@ -76,6 +82,8 @@ def validate_openapi() -> None:
     websocket = spec.get("x-websocket-endpoints", {})
     if "/api/v1/robots/{robotId}/stream" not in websocket:
         raise AssertionError("OpenAPI document is missing the telemetry WebSocket extension")
+    if "/api/v1/robots/{robotId}/observations/stream" not in websocket:
+        raise AssertionError("OpenAPI document is missing the sensor observation WebSocket extension")
 
     print("PASS docs/api/openapi.json: required REST paths and external schema references exist")
 
