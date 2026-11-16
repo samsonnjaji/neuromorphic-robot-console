@@ -3,23 +3,23 @@
 **Last updated:** 2026-11-16  
 **Repository:** https://github.com/samsonnjaji/neuromorphic-robot-console  
 **Base branch:** `main`  
-**Main commit:** `dae6fa3cd4badc9196ccd296eae77dbe7f4d65ff`  
-**Active development branch:** `feat/edge-provenance-demo-fixture` ([PR #17 — provenance hardening and synthetic MCAP fixture](https://github.com/samsonnjaji/neuromorphic-robot-console/pull/17); CI pending)  
+**Main commit:** `b31478332fe08924630cb83a73ae9ca94de4ac26`  
+**Active development branch:** none; PR #17 is merged. Next increment: local gateway smoke validation, then read-only ROS 2 capture design.  
 **Artifact storage merge commit:** `3300de07779bc8c06329eeae97ee5c5ea8bca3ef`  
 **Artifact cleanup merge commit:** `e4c945f6aa9f8eaccfc816da48ac48ca92675e3e`  
-**Merged PRs:** [PR #14 — S3-compatible artifact storage](https://github.com/samsonnjaji/neuromorphic-robot-console/pull/14); [PR #15 — automatic abandoned-upload cleanup](https://github.com/samsonnjaji/neuromorphic-robot-console/pull/15); [PR #16 — offline MCAP ingestion gateway](https://github.com/samsonnjaji/neuromorphic-robot-console/pull/16)  
+**Merged PRs:** [PR #14 — S3-compatible artifact storage](https://github.com/samsonnjaji/neuromorphic-robot-console/pull/14); [PR #15 — automatic abandoned-upload cleanup](https://github.com/samsonnjaji/neuromorphic-robot-console/pull/15); [PR #16 — offline MCAP ingestion gateway](https://github.com/samsonnjaji/neuromorphic-robot-console/pull/16); [PR #17 — provenance v2 and synthetic MCAP fixture](https://github.com/samsonnjaji/neuromorphic-robot-console/pull/17)  
 **Cleanup push CI:** [Run 68 — success](https://github.com/samsonnjaji/neuromorphic-robot-console/actions/runs/43714195321)  
 **Cleanup PR CI:** [Run 69 — success](https://github.com/samsonnjaji/neuromorphic-robot-console/actions/runs/43714200783)  
 **Main CI:** [Run 70 — success](https://github.com/samsonnjaji/neuromorphic-robot-console/actions/runs/43714385506); [Run 71 — success](https://github.com/samsonnjaji/neuromorphic-robot-console/actions/runs/43714476010)  
 **Gateway PR CI:** [Run 116 — success](https://github.com/samsonnjaji/neuromorphic-robot-console/actions/runs/43804370558)  
-**Provenance PR:** [PR #17](https://github.com/samsonnjaji/neuromorphic-robot-console/pull/17), branch `feat/edge-provenance-demo-fixture`, head `e664e35885d676e9dd40717db0470d5c0638ef2a`; [CI Run 146](https://github.com/samsonnjaji/neuromorphic-robot-console/actions/runs/43805434032) was in progress at the last check.  
+**Provenance PR:** [PR #17 — merged](https://github.com/samsonnjaji/neuromorphic-robot-console/pull/17); merge commit `b31478332fe08924630cb83a73ae9ca94de4ac26`; [CI Run 191 — success](https://github.com/samsonnjaji/neuromorphic-robot-console/actions/runs/43806042612).  
 **Security:** GitGuardian checks passed.
 
 ## 1. Instruction for the next ChatGPT session
 
 Continue in the existing repository. Do not restart architecture planning or ask the user to repeat decisions. First inspect the current `main` branch, active PR and latest GitHub Actions run; the remote repository is the source of truth.
 
-The user wants to be told explicitly when to pull the code onto their Windows PC and open it in Cursor. The earlier local baseline is complete: Windows 11/JDK 17, Gradle 9.7, Android SDK, Docker engine through Ubuntu WSL, PostgreSQL exposed on host port 5435, API health/experiment CRUD, persistence across API restart, desktop REST/WebSocket relay and Android debug build. Artifact storage PR #14, cleanup PR #15 and offline MCAP gateway PR #16 are merged. **The combined PostgreSQL V4/RustFS workflow and the gateway-to-Ktor/RustFS synthetic MCAP import have not yet been smoke-tested on the user's PC.** The next workstation checkpoint is to pull current `main`, preserve the existing PostgreSQL/object-store volumes, and run both local tests when the PC is available.
+The user wants to be told explicitly when to pull the code onto their Windows PC and open it in Cursor. The earlier local baseline is complete: Windows 11/JDK 17, Gradle 9.7, Android SDK, Docker engine through Ubuntu WSL, PostgreSQL exposed on host port 5435, API health/experiment CRUD, persistence across API restart, desktop REST/WebSocket relay and Android debug build. PRs #14–#17 are merged, including S3-compatible storage, abandoned-upload cleanup, offline MCAP ingestion and provenance manifest v2. **The combined PostgreSQL V4/RustFS workflow and gateway-to-Ktor/RustFS synthetic MCAP import have not yet been smoke-tested on the user's PC.** When the workstation is available, ask the user to pull current `main`, preserve the existing PostgreSQL/object-store volumes, and run both local tests. Do not ask them to pull an unmerged feature branch.
 
 Keep this handoff and roadmap current after substantial milestones. Record commit SHAs, PR links, CI runs, implemented work, limitations and the next exact task. Never claim a test passed without checking its run.
 
@@ -109,9 +109,9 @@ No remote robot actuation in the initial release. Any later control plane needs 
 - Run 66, final cleanup branch push including local setup documentation, passed the full workflow.
 - Run 67, PR #15 validation, passed the full workflow; GitGuardian Security Checks also passed.
 
-### Edge Gateway v1 — PR #16 merged
+### Edge Gateway v1 and provenance v2 — PRs #16 and #17 merged
 
-PR #16 delivers the offline MCAP importer. The main-branch manifest in PR #16 uses a recorded-ingestion label; PR #17 is open to add immutable `edge-recording-manifest.v2`, separating source origin (`PHYSICAL_SENSOR`, `SIMULATED`, `DATASET`, `UNKNOWN`) from ingestion mode (`RECORDED`), plus a labelled synthetic MCAP fixture generator. The original v1 schema remains unchanged. Do not treat that follow-up as merged until its PR and CI pass.
+PR #16 delivers the offline MCAP importer. PR #17 adds immutable `edge-recording-manifest.v2`, separating source origin (`PHYSICAL_SENSOR`, `SIMULATED`, `DATASET`, `UNKNOWN`) from ingestion mode (`RECORDED`), plus a labelled synthetic MCAP fixture generator with ROS 2 CDR and QoS metadata. The original v1 schema remains unchanged for historical compatibility. PR #17 merged as `b31478332fe08924630cb83a73ae9ca94de4ac26`; GitHub Actions Run #191 passed.
 
 Branch: `feat/edge-mcap-ingestion-v1`.
 
@@ -131,25 +131,25 @@ This is offline MCAP ingestion only. Live ROS 2 subscriptions, CDR payload decod
 - The cleanup worker is a single API-process service. Object deletion is idempotent and retryable; multi-tenant quotas and verified-object lifecycle policies remain future work.
 - Desktop API relay mode uses synthetic telemetry; no real robot is connected.
 - Android API integration is not implemented; Android currently uses simulator mode.
-- No live ROS 2 subscriptions/decoder, web client or Python inference runtime yet. Offline MCAP ingestion v1 is merged into `main` via PR #16; provenance hardening and the synthetic fixture are under review in PR #17.
+- No live ROS 2 subscriptions/decoder, web client or Python inference runtime yet. Offline MCAP ingestion v1 is merged via PR #16; provenance manifest v2 and the labelled synthetic fixture are merged via PR #17. The local gateway-to-Ktor/RustFS synthetic import remains unverified on the user's PC.
 - Robustness Lab profiles are deterministic synthetic perturbations, not calibrated weather physics or measured model accuracy.
 - NRC is not a safety-rated robot controller.
 
 ## 5. Immediate next tasks
 
-1. Verify PR #17 CI, fix any failures, and merge only after the complete workflow passes.
-2. Ask the user to pull current `main` into the Windows checkout when the workstation is available. Preserve the existing PostgreSQL and RustFS volumes; keep host port 5435 if native PostgreSQL owns 5432.
-3. Run the combined local storage smoke test for Flyway V4, RustFS upload/download, SHA-256 verification and abandoned-upload cleanup.
-4. Run the synthetic MCAP end-to-end smoke test against the local Ktor/RustFS stack, with `--data-origin SIMULATED`.
-5. Record the actual local results in this handoff; do not claim real-sensor validation from the synthetic fixture.
-6. Implement the live read-only ROS 2 adapter, selected CDR decoding, bounded buffering/backpressure and reconnect behavior.
+1. When the user's workstation is available, ask them to pull the latest `main` into the Windows checkout. Preserve the existing PostgreSQL and RustFS volumes; keep host port 5435 if native PostgreSQL owns 5432.
+2. Run the combined local storage smoke test for Flyway V4, RustFS upload/download, SHA-256 verification and abandoned-upload cleanup.
+3. Run the synthetic MCAP end-to-end smoke test against the local Ktor/RustFS stack, with `--data-origin SIMULATED`.
+4. Record the actual local results in this handoff; do not claim real-sensor validation from the synthetic fixture.
+5. Design a separate, versioned sensor-observation contract so live ROS 2 data does not have to be padded into the existing full dashboard snapshot.
+6. Implement explicitly configured, read-only ROS 2 subscriptions with MCAP recording, selected CDR decoding, bounded buffering/backpressure and reconnect behavior.
 7. Validate one real sensor recording before starting inference-worker comparisons.
 
 ## 6. Local testing instructions
 
 The user's Windows checkout is C:\\Users\\njaji\\Projects\\neuromorphic-robot-console. Docker is available through Ubuntu WSL; Windows PowerShell does not expose docker.exe. Native PostgreSQL owns host port 5432, so the NRC container is exposed on host port 5435.
 
-PRs #15 and #16 are already merged; the following procedure applies to current `main`:
+PRs #15, #16 and #17 are already merged; the following procedure applies to current `main`:
 
 1. In PowerShell at the repository root:
    ```powershell
@@ -225,7 +225,7 @@ The import must return an experiment ID, run ID, recording-session ID, MCAP arti
 - `deploy/local/README.md` — local PostgreSQL/RustFS/API/desktop/artifact upload instructions.
 - `services/edge-gateway/` — Python offline MCAP inspection and ingestion CLI.
 - `docs/EDGE_GATEWAY.md` — edge-gateway scope, data flow and next increments.
-- `schemas/edge-recording-manifest.v1.schema.json` — versioned MCAP provenance contract.
+- `schemas/edge-recording-manifest.v2.schema.json` — current MCAP provenance contract; v1 remains historical and unchanged.
 - `gradle/wrapper/` — pinned Gradle wrapper and checksums.
 
 ## 9. Working rules
