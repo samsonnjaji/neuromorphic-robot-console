@@ -4,7 +4,7 @@ import json
 import unittest
 from pathlib import Path
 
-from jsonschema import Draft202012Validator
+from jsonschema import Draft202012Validator, ValidationError
 
 
 class SensorObservationContractTests(unittest.TestCase):
@@ -42,7 +42,7 @@ class SensorObservationContractTests(unittest.TestCase):
                 / "schemas/fixtures/sensor-observation.v1.invalid.json"
             ).read_text(encoding="utf-8")
         )
-        with self.assertRaises(Exception):
+        with self.assertRaises(ValidationError):
             self.validator.validate(fixture)
 
 
