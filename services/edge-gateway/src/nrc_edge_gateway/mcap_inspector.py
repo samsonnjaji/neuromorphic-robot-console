@@ -165,7 +165,8 @@ class McapInspection:
         )
         if has_synthetic_marker and data_origin in {"PHYSICAL_SENSOR", "DATASET"}:
             raise ValueError(
-                "synthetic MCAP fixtures cannot be labelled PHYSICAL_SENSOR or DATASET"
+                "recording contains a synthetic-fixture marker; data_origin cannot be "
+                "PHYSICAL_SENSOR or DATASET"
             )
 
         return {
