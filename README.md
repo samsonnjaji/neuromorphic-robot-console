@@ -13,7 +13,7 @@ NRC is one platform with shared experiment contracts and multiple clients:
 - **Web:** team collaboration, experiment registry and report review (planned).
 - **Shared core:** common domain models, validation, scenario logic and experiment metrics.
 - **Platform API:** experiment metadata, telemetry ingestion and live stream distribution.
-- **Edge gateway:** read-only ROS 2, MCAP and ROS bag connectivity (planned).
+- **Edge gateway:** Python offline MCAP inspection and verified recording ingestion v1; live ROS 2 subscriptions and ROS bag decoding remain planned.
 - **Inference runtime:** separate workers for conventional and spiking neural networks (planned).
 
 The target architecture is staged. A planned component is not considered implemented until it exists, builds and passes tests.
@@ -33,6 +33,7 @@ The target architecture is staged. A planned component is not considered impleme
 - Ktor Platform API MVP: health, experiment/run/recording lifecycle, telemetry ingestion and WebSocket fan-out.
 - PostgreSQL repositories for experiment definitions, experiment runs, recording-session metadata and artifact metadata, using HikariCP and Flyway migrations.
 - S3-compatible artifact storage with RustFS locally, presigned single-part/multipart uploads, and server-side size/SHA-256 verification.
+- Python edge-gateway CLI for offline MCAP inspection, channel/schema/timestamp indexing, versioned provenance manifests, and verified artifact upload.
 - Background cleanup for expired pending/failed uploads, including multipart aborts and retryable object deletion.
 - Persistent experiment-run lifecycle with source-revision/configuration provenance and validated state transitions.
 - Recording-session metadata lifecycle for MCAP, ROSBAG2, NRC_JSONL and other recording formats.
@@ -55,6 +56,7 @@ The target architecture is staged. A planned component is not considered impleme
 - [ADR-002: Versioned data contracts](docs/ADR/ADR-002-data-contracts.md)
 - [Product specification](docs/PRODUCT_SPEC.md)
 - [Environment Robustness Lab](docs/ROBUSTNESS_LAB.md)
+- [Edge Gateway](docs/EDGE_GATEWAY.md)
 - [Market positioning](docs/MARKET_POSITIONING.md)
 - [Social impact and business model](docs/IMPACT_AND_BUSINESS_MODEL.md)
 - [Start guide](START_HERE.md)
