@@ -1,7 +1,7 @@
 # NRC Platform Architecture
 
 **Status:** Target architecture, accepted and being implemented in validated stages  
-**Current baseline:** Kotlin Multiplatform core, Android/desktop simulator clients, Ktor API MVP, PostgreSQL experiment/run/recording/artifact metadata, S3-compatible artifact upload with background cleanup, and validated local desktop relay  
+**Current baseline:** Kotlin Multiplatform core, Android/desktop simulator clients, Ktor API MVP, PostgreSQL experiment/run/recording/artifact metadata, S3-compatible artifact upload with background cleanup, validated local desktop relay, and Python offline MCAP inspection/ingestion v1  
 **Architecture principle:** one shared robotics intelligence and experiment model, multiple clients and deployment modes.
 
 ## 1. Product boundary
@@ -104,19 +104,23 @@ The clients must not connect directly to databases or inference workers.
 
 ### C. NRC Edge Gateway — robot connectivity
 
-**Planned implementation:** separate ROS 2 process, initially Python or C++ according to driver and deployment needs.
+**Current implementation:** a separate Python package at `services/edge-gateway` provides offline MCAP inspection, provenance indexing, experiment/recording registration and verified artifact upload. **Planned extension:** a live read-only ROS 2 process, initially Python unless driver/runtime requirements justify another implementation.
 
-Responsibilities:
-- Subscribe to configured ROS 2 sensor and state topics.
-- Normalize timestamps, frame IDs, units and source metadata.
-- Publish read-only telemetry to NRC.
-- Import MCAP and ROS bag recordings.
-- Buffer data when the network is unavailable.
+Implemented in MCAP ingestion v1:
+- Validate MCAP framing and index channels, topics, message encodings and available schema metadata.
+- Preserve source publish timestamps and recorder log timestamps separately in nanoseconds.
+- Preserve per-channel message counts and sequence ranges.
+- Compute streaming SHA-256 and upload the untouched MCAP plus a versioned provenance manifest.
+- Register the recording through the existing experiment, recording-session and artifact APIs.
+
+Planned live-gateway responsibilities:
+- Subscribe only to explicitly configured ROS 2 sensor and state topics.
+- Decode selected message types and normalize timestamps, frame IDs, units and source metadata without silent substitutions.
+- Publish compact, read-only telemetry to NRC.
+- Add bounded buffering, explicit backpressure/drop metrics and reconnect behavior.
 - Report device identity, connection state and software version.
 
-Initial integrations: ROS 2, MCAP, ROS bag, event cameras, LiDAR, RGB cameras, radar and IMU.
-
-The first gateway is read-only. Motion commands and remote actuation are explicitly outside the initial release.
+Planned integrations include ROS 2, ROS bag, event cameras, LiDAR, RGB cameras, radar and IMU. MCAP payload decoding and live ROS 2 subscriptions are not implemented in v1. The gateway is read-only; motion commands and remote actuation are explicitly outside the initial release.
 
 ### D. NRC Inference Runtime — model execution
 
@@ -273,7 +277,8 @@ neuromorphic-robot-console/
 | Local PostgreSQL Docker Compose setup | Implemented |
 | Authentication and organisation access controls | Planned |
 | S3-compatible recording storage | Implemented; CI verified, local smoke test pending |
-| ROS 2 edge gateway | Planned |
+| Offline MCAP inspection and verified artifact ingestion | Implemented in edge-gateway v1; CI verification pending |
+| Live ROS 2 subscriptions and message decoding | Planned |
 | Python inference workers | Planned |
 | Web client | Planned |
 | Real dataset evaluation and measured model comparisons | Planned |
