@@ -155,6 +155,24 @@ class McapInspectorTests(unittest.TestCase):
             self.assertEqual(result.min_log_time_unix_ns, 100)
             self.assertEqual(result.max_log_time_unix_ns, 200)
 
+    def test_manifest_defaults_to_unknown_origin(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "fixture.mcap"
+            write_fixture(path)
+            manifest = McapInspector().inspect(path).manifest(robot_id="robot-01")
+            self.assertEqual(manifest["dataOrigin"], "UNKNOWN")
+            self.assertEqual(manifest["ingestionMode"], "RECORDED")
+
+    def test_rejects_invalid_data_origin(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "fixture.mcap"
+            write_fixture(path)
+            with self.assertRaises(ValueError):
+                McapInspector().inspect(path).manifest(
+                    robot_id="robot-01",
+                    data_origin="REALISH",
+                )
+
     def test_rejects_non_mcap_input(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "not-mcap.bin"
