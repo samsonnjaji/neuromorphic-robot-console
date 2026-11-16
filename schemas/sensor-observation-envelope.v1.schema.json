@@ -1,0 +1,125 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nrc.example/schemas/sensor-observation-envelope.v1.schema.json",
+  "title": "NRC Sensor Observation Envelope v1",
+  "description": "A bounded sensor observation event. Source timestamps retain their declared clock domain; host receive time is Unix nanoseconds.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "messageType",
+    "robotId",
+    "sourceId",
+    "sensorType",
+    "topic",
+    "rosType",
+    "sequence",
+    "sourceClock",
+    "receivedAtUnixNs",
+    "dataOrigin",
+    "units",
+    "payload"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "messageType": {
+      "const": "sensor.observation"
+    },
+    "robotId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 255
+    },
+    "sourceId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 255
+    },
+    "sensorType": {
+      "enum": [
+        "IMU",
+        "ODOMETRY",
+        "LASER_SCAN",
+        "IMAGE",
+        "POINT_CLOUD2",
+        "EVENT_CAMERA",
+        "RADAR",
+        "GPS",
+        "OTHER"
+      ]
+    },
+    "topic": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512
+    },
+    "rosType": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 255
+    },
+    "sequence": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "sourceTimestampNs": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "sourceClock": {
+      "enum": [
+        "ROS_TIME",
+        "SYSTEM_TIME",
+        "MCAP_PUBLISH_TIME",
+        "UNKNOWN"
+      ]
+    },
+    "receivedAtUnixNs": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "frameId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 255
+    },
+    "childFrameId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 255
+    },
+    "dataOrigin": {
+      "enum": [
+        "PHYSICAL_SENSOR",
+        "SIMULATED",
+        "DATASET",
+        "UNKNOWN"
+      ]
+    },
+    "units": {
+      "type": "object",
+      "maxProperties": 32,
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 64
+      }
+    },
+    "payload": {
+      "type": "object",
+      "minProperties": 1,
+      "maxProperties": 128,
+      "description": "Compact decoded JSON sample or metadata summary. Raw high-bandwidth data remains in MCAP/object-storage artifacts.",
+      "additionalProperties": true
+    }
+  }
+}
