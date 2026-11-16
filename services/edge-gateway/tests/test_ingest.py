@@ -5,17 +5,17 @@ import unittest
 from pathlib import Path
 from typing import Any
 
-from mcap.writer import Writer
+from mcap.writer import CompressionType, Writer
 
 from nrc_edge_gateway.ingest import NrcMcapIngestor
 
 
 def write_fixture(path: Path) -> None:
     with path.open("wb") as output:
-        writer = Writer(output)
+        writer = Writer(output, compression=CompressionType.NONE)
         writer.start(profile="ros2", library="ingest-test")
         channel_id = writer.register_channel(
-            topic="/robot/imu", message_encoding="cdr"
+            topic="/robot/imu", message_encoding="cdr", schema_id=0
         )
         writer.add_message(
             channel_id,
