@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://nrc.example/schemas/sensor-observation-envelope.v1.schema.json",
   "title": "NRC Sensor Observation Envelope v1",
-  "description": "A bounded sensor observation event. Source timestamps retain their declared clock domain; host receive time is Unix nanoseconds.",
+  "description": "A bounded sensor observation event. Source timestamps retain their declared clock domain; edge-gateway receive time is Unix nanoseconds.",
   "type": "object",
   "additionalProperties": false,
   "required": [
