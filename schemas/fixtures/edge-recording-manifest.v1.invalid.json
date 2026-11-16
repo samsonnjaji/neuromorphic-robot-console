@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "gatewayVersion": "0.1.0",
+  "recordedAtUnixMs": 1794810000000,
+  "dataOrigin": "SIMULATED",
+  "robotId": "nrc-fixture-robot",
+  "sourceId": "fixture-source",
+  "fileName": "fixture.mcap",
+  "fileSizeBytes": 128,
+  "sha256Hex": "not-a-sha256",
+  "mcapProfile": "ros2",
+  "mcapLibrary": "mcap-python",
+  "messageCount": 2,
+  "topicCount": 1,
+  "channelCount": 1,
+  "timestamps": {
+    "unit": "milliseconds",
+    "logTimeUnixNs": { "min": 1700000000000000100, "max": 1700000000000000200 },
+    "publishTimeUnixNs": { "min": 1700000000000000090, "max": 1700000000000000190, "zeroCount": 0 }
+  },
+  "channels": []
+}

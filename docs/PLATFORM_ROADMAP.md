@@ -70,13 +70,15 @@ This roadmap sequences platform work so that every phase produces a usable, test
 
 **Goal:** connect real robotics data without enabling control.
 
-- [ ] Implement a read-only ROS 2 gateway.
-- [ ] Support MCAP and ROS bag import.
-- [ ] Preserve source timestamps, frame IDs, units and provenance.
-- [ ] Add buffering and reconnect behavior.
-- [ ] Validate one real sensor recording end-to-end.
+- [x] Implement offline MCAP framing validation and channel/topic/schema indexing (edge-gateway v1; CI verification pending).
+- [x] Preserve MCAP publish and log timestamps separately in nanoseconds, with channel message counts and sequence ranges.
+- [x] Generate a versioned provenance manifest and upload the original MCAP plus manifest through the verified artifact workflow.
+- [ ] Implement explicitly configured, read-only ROS 2 subscriptions.
+- [ ] Decode selected ROS 2 message types and preserve source timestamps, frame IDs, units and provenance.
+- [ ] Add bounded live buffering, explicit backpressure/drop metrics and reconnect behavior.
+- [ ] Support ROS bag import and validate one real sensor recording end-to-end.
 
-**Exit criteria:** a real recording can be ingested, inspected and replayed with traceable provenance.
+**Exit criteria:** a real recording can be ingested, inspected and replayed with traceable provenance. Offline MCAP ingestion is an initial increment; it does not complete the live ROS 2 integration milestone.
 
 ## Phase 4 — Inference and scientific validation
 
