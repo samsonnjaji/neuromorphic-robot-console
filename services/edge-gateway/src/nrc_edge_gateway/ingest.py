@@ -29,7 +29,8 @@ class IngestResult:
             "recordingSessionId": self.recording_session_id,
             "mcapArtifactId": self.mcap_artifact_id,
             "manifestArtifactId": self.manifest_artifact_id,
-            "dataOrigin": "RECORDED",
+            "dataOrigin": self.manifest["dataOrigin"],
+            "ingestionMode": self.manifest["ingestionMode"],
             "inferenceExecuted": False,
             "messageCount": self.manifest["messageCount"],
             "topicCount": self.manifest["topicCount"],
@@ -50,7 +51,8 @@ class NrcMcapIngestor:
         self,
         file_path: str | Path,
         robot_id: str,
-        scenario: str,
+        scenario: str | None = None,
+        data_origin: str = "UNKNOWN",
         source_id: str | None = None,
         experiment_id: str | None = None,
         experiment_name: str | None = None,
@@ -60,10 +62,23 @@ class NrcMcapIngestor:
     ) -> IngestResult:
         path = Path(file_path).expanduser()
         inspection = self.inspector.inspect(path)
-        manifest = inspection.manifest(robot_id=robot_id, source_id=source_id)
+        manifest = inspection.manifest(
+            robot_id=robot_id,
+            source_id=source_id,
+            data_origin=data_origin,
+        )
 
-        if scenario not in {"CLEAR", "HEAVY_RAIN", "FOG", "LOW_LIGHT", "DUST_SMOKE"}:
-            raise ValueError("scenario must be a supported NRC environment scenario")
+        supported_scenarios = {
+            "CLEAR", "HEAVY_RAIN", "FOG", "LOW_LIGHT", "DUST_SMOKE"
+        }
+        if experiment_id is None and scenario not in supported_scenarios:
+            raise ValueError(
+                "a supported --scenario is required when creating a new experiment"
+            )
+        if experiment_id is not None and scenario is not None:
+            raise ValueError(
+                "omit scenario when using --experiment-id; the existing experiment owns it"
+            )
 
         created_experiment_id = experiment_id
         if created_experiment_id is None:
@@ -95,7 +110,8 @@ class NrcMcapIngestor:
                 {
                     "sourceRevision": f"nrc-edge-gateway/{__version__}",
                     "configuration": {
-                        "dataOrigin": "RECORDED",
+                        "dataOrigin": manifest["dataOrigin"],
+                        "ingestionMode": manifest["ingestionMode"],
                         "sourceFormat": "MCAP",
                         "robotId": robot_id,
                         "edgeGatewayVersion": __version__,
@@ -162,7 +178,8 @@ class NrcMcapIngestor:
                 {
                     "status": "COMPLETED",
                     "resultSummary": {
-                        "dataOrigin": "RECORDED",
+                        "dataOrigin": manifest["dataOrigin"],
+                        "ingestionMode": manifest["ingestionMode"],
                         "inferenceExecuted": False,
                         "recordingSessionId": recording_id,
                         "messageCount": inspection.message_count,
