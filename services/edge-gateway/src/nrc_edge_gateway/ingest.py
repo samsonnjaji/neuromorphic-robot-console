@@ -99,7 +99,11 @@ class NrcMcapIngestor:
                         "sourceFormat": "MCAP",
                         "robotId": robot_id,
                         "edgeGatewayVersion": __version__,
-                        "recordingManifest": manifest,
+                        "manifestVersion": manifest["schemaVersion"],
+                        "recordingSha256Hex": manifest["sha256Hex"],
+                        "messageCount": inspection.message_count,
+                        "topicCount": inspection.topic_count,
+                        "channelCount": inspection.channel_count,
                     },
                 },
             )
