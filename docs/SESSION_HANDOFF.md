@@ -146,14 +146,6 @@ This is offline MCAP ingestion only. Live ROS 2 subscriptions, CDR payload decod
 5. Add selected typed decoders and a future API ingestion path for Sensor Observation Envelope; do not coerce raw messages into RobotTelemetry.
 6. Only then proceed to live streaming, inference workers and scientific model comparisons.
 
-1. When the user's workstation is available, ask them to pull the latest `main` into the Windows checkout. Preserve the existing PostgreSQL and RustFS volumes; keep host port 5435 if native PostgreSQL owns 5432.
-2. Run the combined local storage smoke test for Flyway V4, RustFS upload/download, SHA-256 verification and abandoned-upload cleanup.
-3. Run the synthetic MCAP end-to-end smoke test against the local Ktor/RustFS stack, with `--data-origin SIMULATED`.
-4. Record the actual local results in this handoff; do not claim real-sensor validation from the synthetic fixture.
-5. Design a separate, versioned sensor-observation contract so live ROS 2 data does not have to be padded into the existing full dashboard snapshot.
-6. Implement explicitly configured, read-only ROS 2 subscriptions with MCAP recording, selected CDR decoding, bounded buffering/backpressure and reconnect behavior.
-7. Validate one real sensor recording before starting inference-worker comparisons.
-
 ## 6. Local testing instructions
 
 The user's Windows checkout is C:\\Users\\njaji\\Projects\\neuromorphic-robot-console. Docker is available through Ubuntu WSL; Windows PowerShell does not expose docker.exe. Native PostgreSQL owns host port 5432, so the NRC container is exposed on host port 5435.
@@ -221,6 +213,11 @@ nrc-edge ingest .\\synthetic-demo.mcap --api-url http://127.0.0.1:8080 --robot-i
 The import must return an experiment ID, run ID, recording-session ID, MCAP artifact ID and manifest artifact ID. The CLI only exits successfully after both artifacts are `VERIFIED` and the run reaches `COMPLETED`. This is a synthetic integration fixture, not a physical robot test. Preserve the local PostgreSQL/RustFS volumes throughout.
 
 ## 8. Key files
+
+- `schemas/sensor-observation.v1.schema.json`
+- `docs/SENSOR_OBSERVATION_CONTRACT.md`
+- `docs/ADR/ADR-003-sensor-observation-envelope.md`
+- `services/edge-gateway/src/nrc_edge_gateway/ros2_capture.py`
 
 - `schemas/sensor-observation.v1.schema.json`
 - `docs/SENSOR_OBSERVATION_CONTRACT.md`
