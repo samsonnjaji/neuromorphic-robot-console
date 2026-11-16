@@ -36,7 +36,17 @@ def build_parser() -> argparse.ArgumentParser:
     ingest_command.add_argument("--timeout-seconds", type=float, default=60.0)
     ingest_command.add_argument("--robot-id", required=True)
     ingest_command.add_argument("--source-id")
-    ingest_command.add_argument("--scenario", required=True, choices=SCENARIOS)
+    ingest_command.add_argument(
+        "--scenario",
+        choices=SCENARIOS,
+        help="required when creating a new experiment; omit with --experiment-id",
+    )
+    ingest_command.add_argument(
+        "--data-origin",
+        choices=("PHYSICAL_SENSOR", "SIMULATED", "DATASET", "UNKNOWN"),
+        default="UNKNOWN",
+        help="provenance of the data source; defaults to UNKNOWN rather than assuming physical data",
+    )
     ingest_command.add_argument("--experiment-id")
     ingest_command.add_argument("--experiment-name")
     ingest_command.add_argument("--description", default="")
@@ -63,6 +73,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             robot_id=arguments.robot_id,
             source_id=arguments.source_id,
             scenario=arguments.scenario,
+            data_origin=arguments.data_origin,
             experiment_id=arguments.experiment_id,
             experiment_name=arguments.experiment_name,
             description=arguments.description,
