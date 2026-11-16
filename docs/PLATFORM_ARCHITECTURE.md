@@ -201,7 +201,9 @@ Robot registry, authenticated users/organisations, model registry, dataset regis
 
 ### Versioned contracts
 
-- Sensor Observation Envelope v1 is a separate per-topic contract. It does not replace the aggregated RobotTelemetry snapshot and does not yet have an API route.
+- [Sensor Observation Envelope v1](../schemas/sensor-observation.v1.schema.json) is a separate per-topic contract. It does not replace the aggregated RobotTelemetry snapshot and does not yet have an API route.
+- [Sensor Observation Contract design](SENSOR_OBSERVATION_CONTRACT.md)
+- [ADR-003: Separate sensor observations from aggregated telemetry](ADR/ADR-003-sensor-observation-envelope.md)
 
 The v1 telemetry envelope and experiment manifest are stored under `schemas/`. Positive and negative fixtures are checked by `scripts/validate_schemas.py` in GitHub Actions. The Ktor API also decodes the typed Kotlin serialization envelope and applies stream/schema-version/sequence checks. The JSON Schema documents remain the cross-language wire-contract reference.
 
@@ -281,6 +283,7 @@ neuromorphic-robot-console/
 | S3-compatible recording storage | Implemented; CI verified, local smoke test pending |
 | Offline MCAP inspection and artifact ingestion client | Implemented; PR #16 and CI Run #116 passed; local end-to-end smoke test pending |
 | Read-only ROS 2 capture via rosbag2/MCAP | In progress in PR #18; CI and WSL ROS 2 validation pending |
+| Sensor Observation Envelope v1 | Contract and fixtures in PR #18; CI pending; no API route yet |
 | Sensor Observation Envelope v1 | Contract added in PR #18; API route and adapters not implemented |
 | Live ROS 2 subscriptions and message decoding | Planned |
 | Python inference workers | Planned |
