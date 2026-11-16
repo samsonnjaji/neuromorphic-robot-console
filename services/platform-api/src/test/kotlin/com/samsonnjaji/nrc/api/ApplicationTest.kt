@@ -134,6 +134,78 @@ class ApplicationTest {
     }
 
     @Test
+    fun sensorObservationIngestionAcceptsAndRejectsDuplicateSequence() = testApplication {
+        application { module() }
+        val payload = """
+            {
+              "schemaVersion": 1,
+              "messageType": "sensor.observation",
+              "robotId": "nrc-test-robot",
+              "sourceId": "imu-front",
+              "sensorType": "IMU",
+              "topic": "/imu/data",
+              "rosType": "sensor_msgs/msg/Imu",
+              "sequence": 1,
+              "sourceTimestampNs": 123000000,
+              "sourceClock": "ROS_TIME",
+              "receivedAtUnixNs": 1800000000000000000,
+              "frameId": "imu_link",
+              "dataOrigin": "PHYSICAL_SENSOR",
+              "units": {
+                "linear_acceleration": "m/s^2",
+                "angular_velocity": "rad/s"
+              },
+              "payload": {
+                "linearAcceleration": {"x": 0.1, "y": 0.2, "z": 9.81},
+                "angularVelocity": {"x": 0.0, "y": 0.0, "z": 0.01}
+              }
+            }
+        """.trimIndent()
+
+        val first = client.post("/api/v1/robots/nrc-test-robot/observations") {
+            contentType(ContentType.Application.Json)
+            setBody(payload)
+        }
+        assertEquals(HttpStatusCode.Accepted, first.status)
+        assertContains(first.bodyAsText(), "\"sourceId\":\"imu-front\"")
+
+        val duplicate = client.post("/api/v1/robots/nrc-test-robot/observations") {
+            contentType(ContentType.Application.Json)
+            setBody(payload)
+        }
+        assertEquals(HttpStatusCode.BadRequest, duplicate.status)
+        assertContains(duplicate.bodyAsText(), "stale_or_duplicate_sequence")
+    }
+
+    @Test
+    fun sensorObservationIngestionRejectsRouteRobotMismatch() = testApplication {
+        application { module() }
+        val payload = """
+            {
+              "schemaVersion": 1,
+              "messageType": "sensor.observation",
+              "robotId": "robot-inside-payload",
+              "sourceId": "lidar-front",
+              "sensorType": "LASER_SCAN",
+              "topic": "/scan",
+              "rosType": "sensor_msgs/msg/LaserScan",
+              "sequence": 1,
+              "sourceClock": "UNKNOWN",
+              "receivedAtUnixNs": 1800000000000000000,
+              "dataOrigin": "UNKNOWN",
+              "payload": {"ranges": [0.5, 1.0, 1.5]}
+            }
+        """.trimIndent()
+
+        val response = client.post("/api/v1/robots/nrc-test-robot/observations") {
+            contentType(ContentType.Application.Json)
+            setBody(payload)
+        }
+        assertEquals(HttpStatusCode.BadRequest, response.status)
+        assertContains(response.bodyAsText(), "wrong_robot")
+    }
+
+    @Test
     fun telemetryIngestionRejectsDuplicateSequence() = testApplication {
         application { module() }
         val payload = """
