@@ -212,7 +212,7 @@ class McapInspector:
 
         try:
             with path.open("rb") as stream:
-                reader = make_reader(stream)
+                reader = make_reader(stream, validate_crcs=True)
                 header = reader.get_header() if hasattr(reader, "get_header") else None
                 summary = reader.get_summary() if hasattr(reader, "get_summary") else None
                 profile = str(
