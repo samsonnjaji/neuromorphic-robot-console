@@ -10,7 +10,6 @@
     "gatewayVersion",
     "recordedAtUnixMs",
     "dataOrigin",
-    "ingestionMode",
     "robotId",
     "sourceId",
     "fileName",
@@ -28,10 +27,7 @@
     "schemaVersion": { "const": 1 },
     "gatewayVersion": { "type": "string", "minLength": 1 },
     "recordedAtUnixMs": { "type": "integer", "minimum": 1 },
-    "dataOrigin": {
-      "enum": ["PHYSICAL_SENSOR", "SIMULATED", "DATASET", "UNKNOWN"]
-    },
-    "ingestionMode": { "const": "RECORDED" },
+    "dataOrigin": { "const": "RECORDED" },
     "robotId": { "type": "string", "minLength": 1 },
     "sourceId": { "type": "string", "minLength": 1 },
     "fileName": { "type": "string", "minLength": 1 },
