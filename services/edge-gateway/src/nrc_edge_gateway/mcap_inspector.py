@@ -137,6 +137,7 @@ class McapInspection:
         robot_id: str,
         source_id: str | None = None,
         recorded_at_unix_ms: int | None = None,
+        data_origin: str = "UNKNOWN",
     ) -> dict[str, Any]:
         """Build the versioned provenance manifest for an NRC recording session."""
         normalized_robot_id = robot_id.strip()
@@ -149,6 +150,10 @@ class McapInspection:
             raise ValueError("robot_id must not be blank")
         if len(normalized_robot_id) > 255 or len(normalized_source_id) > 255:
             raise ValueError("robot_id and source_id must be at most 255 characters")
+        if data_origin not in {"PHYSICAL_SENSOR", "SIMULATED", "DATASET", "UNKNOWN"}:
+            raise ValueError(
+                "data_origin must be PHYSICAL_SENSOR, SIMULATED, DATASET or UNKNOWN"
+            )
 
         return {
             "schemaVersion": 1,
@@ -158,7 +163,8 @@ class McapInspection:
                 if recorded_at_unix_ms is not None
                 else time.time_ns() // 1_000_000
             ),
-            "dataOrigin": "RECORDED",
+            "dataOrigin": data_origin,
+            "ingestionMode": "RECORDED",
             "robotId": normalized_robot_id,
             "sourceId": normalized_source_id,
             "fileName": self.file_name,
