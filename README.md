@@ -13,7 +13,7 @@ NRC is one platform with shared experiment contracts and multiple clients:
 - **Web:** team collaboration, experiment registry and report review (planned).
 - **Shared core:** common domain models, validation, scenario logic and experiment metrics.
 - **Platform API:** experiment metadata, telemetry ingestion and live stream distribution.
-- **Edge gateway:** Python offline MCAP importer plus read-only rosbag2/MCAP capture adapter (in PR #18; CI pending); local API/RustFS and real-sensor validation remain outstanding.
+- **Edge gateway:** Python offline MCAP importer plus read-only rosbag2/MCAP capture adapter (in PR #19; CI pending); local API/RustFS and real-sensor validation remain outstanding.
 - **Inference runtime:** separate workers for conventional and spiking neural networks (planned).
 
 The target architecture is staged. A planned component is not considered implemented until it exists, builds and passes tests.
@@ -42,7 +42,7 @@ The target architecture is staged. A planned component is not considered impleme
 - OpenAPI 3.1 route documentation and JSON Schema contract validation in CI.
 - Gradle 9.7.0 wrapper for reproducible local builds.
 
-**Current limitations:** the API has no user/device authentication yet and binds to localhost by default. Artifact upload is not yet integrated into the desktop/Android user interface. The offline MCAP importer indexes recording metadata and uploads untouched MCAP files; it does not decode CDR payloads or create live sensor telemetry. Its manifest distinguishes physical-sensor, simulated, dataset and unknown origins from the recorded ingestion mode. Read-only ROS 2 bag capture is being implemented in PR #18; direct CDR decoding, live telemetry streaming, inference workers and the web client remain outstanding. Background cleanup applies to expired pending/failed uploads; retention policies for verified artifacts are not implemented. Live telemetry fan-out is in memory. Desktop API-relay mode is synthetic and read-only; it is not a real robot connection. Current robustness profiles are illustrative synthetic perturbations, not calibrated weather physics, measured model accuracy or safety certification.
+**Current limitations:** the API has no user/device authentication yet and binds to localhost by default. Artifact upload is not yet integrated into the desktop/Android user interface. The offline MCAP importer indexes recording metadata and uploads untouched MCAP files; it does not decode CDR payloads or create live sensor telemetry. Its manifest distinguishes physical-sensor, simulated, dataset and unknown origins from the recorded ingestion mode. Read-only ROS 2 bag capture is being implemented in PR #19; direct CDR decoding, live telemetry streaming, inference workers and the web client remain outstanding. Background cleanup applies to expired pending/failed uploads; retention policies for verified artifacts are not implemented. Live telemetry fan-out is in memory. Desktop API-relay mode is synthetic and read-only; it is not a real robot connection. Current robustness profiles are illustrative synthetic perturbations, not calibrated weather physics, measured model accuracy or safety certification.
 
 ## Architecture and engineering plan
 
