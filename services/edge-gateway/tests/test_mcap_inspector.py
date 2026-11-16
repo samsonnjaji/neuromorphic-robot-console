@@ -116,6 +116,42 @@ class McapInspectorTests(unittest.TestCase):
             schema = json.loads(schema_path.read_text(encoding="utf-8"))
             Draft202012Validator(schema).validate(manifest)
 
+    def test_unchunked_messages_are_read_in_file_order(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "unchunked.mcap"
+            with path.open("wb") as output:
+                writer = Writer(
+                    output,
+                    compression=CompressionType.NONE,
+                    use_chunking=False,
+                )
+                writer.start(profile="ros2", library="file-order-test")
+                channel_id = writer.register_channel(
+                    topic="/robot/pose", message_encoding="cdr", schema_id=0
+                )
+                writer.add_message(
+                    channel_id,
+                    log_time=200,
+                    publish_time=190,
+                    sequence=9,
+                    data=b"later-log-time",
+                )
+                writer.add_message(
+                    channel_id,
+                    log_time=100,
+                    publish_time=90,
+                    sequence=10,
+                    data=b"earlier-log-time",
+                )
+                writer.finish()
+
+            result = McapInspector().inspect(path)
+            channel = result.channels[0]
+            self.assertEqual(channel["firstSequence"], 9)
+            self.assertEqual(channel["lastSequence"], 10)
+            self.assertEqual(result.min_log_time_unix_ns, 100)
+            self.assertEqual(result.max_log_time_unix_ns, 200)
+
     def test_rejects_non_mcap_input(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "not-mcap.bin"
