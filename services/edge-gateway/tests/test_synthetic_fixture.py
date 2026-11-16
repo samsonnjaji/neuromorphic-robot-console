@@ -34,6 +34,10 @@ class SyntheticFixtureTests(unittest.TestCase):
                 manifest["channels"][0]["channelMetadata"]["data_origin"],
                 "SIMULATED",
             )
+            self.assertEqual(
+                manifest["channels"][0]["channelMetadata"]["offered_qos_profiles"],
+                "[]",
+            )
             for invalid_origin in ("PHYSICAL_SENSOR", "DATASET"):
                 with self.assertRaises(ValueError):
                     inspection.manifest(
