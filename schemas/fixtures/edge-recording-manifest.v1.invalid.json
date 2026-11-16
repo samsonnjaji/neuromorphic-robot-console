@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "gatewayVersion": "0.1.0",
   "recordedAtUnixMs": 1794810000000,
-  "dataOrigin": "SIMULATED",
+  "dataOrigin": "RECORDED",
   "robotId": "nrc-fixture-robot",
   "sourceId": "fixture-source",
   "fileName": "fixture.mcap",
