@@ -11,7 +11,7 @@ class SensorObservationStreamGuard(
     private val supportedSchemaVersion: Int = NRC_SENSOR_OBSERVATION_SCHEMA_VERSION,
     private val maxPayloadBytes: Int = NRC_SENSOR_OBSERVATION_MAX_PAYLOAD_BYTES
 ) {
-    private val lastAcceptedSequences = mutableMapOf<String, Long>()
+    private val lastAcceptedSequences = mutableMapOf<Pair<String, String>, Long>()
 
     fun validate(envelope: SensorObservationEnvelope): SensorObservationValidation {
         if (envelope.schemaVersion != supportedSchemaVersion) {
@@ -60,7 +60,7 @@ class SensorObservationStreamGuard(
             return SensorObservationValidation.PAYLOAD_TOO_LARGE
         }
 
-        val streamKey = "${envelope.sourceId}\u0000${envelope.topic}"
+        val streamKey = envelope.sourceId to envelope.topic
         val lastSequence = lastAcceptedSequences[streamKey] ?: -1L
         if (envelope.sequence <= lastSequence) {
             return SensorObservationValidation.STALE_OR_DUPLICATE_SEQUENCE
@@ -75,7 +75,7 @@ class SensorObservationStreamGuard(
     }
 
     fun lastSequence(sourceId: String, topic: String): Long? =
-        lastAcceptedSequences["${sourceId}\u0000${topic}"]
+        lastAcceptedSequences[sourceId to topic]
 }
 
 enum class SensorObservationValidation {
