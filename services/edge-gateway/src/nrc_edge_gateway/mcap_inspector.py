@@ -154,6 +154,20 @@ class McapInspection:
             raise ValueError(
                 "data_origin must be PHYSICAL_SENSOR, SIMULATED, DATASET or UNKNOWN"
             )
+        has_synthetic_marker = any(
+            str(channel.get("channelMetadata", {}).get("fixture", "")).lower()
+            == "synthetic"
+            or str(
+                channel.get("channelMetadata", {}).get("data_origin", "")
+            ).upper()
+            == "SIMULATED"
+            for channel in self.channels
+        )
+        if has_synthetic_marker and data_origin in {"PHYSICAL_SENSOR", "DATASET"}:
+            raise ValueError(
+                "recording contains a synthetic-fixture marker; data_origin cannot be "
+                "PHYSICAL_SENSOR or DATASET"
+            )
 
         return {
             "schemaVersion": 2,
