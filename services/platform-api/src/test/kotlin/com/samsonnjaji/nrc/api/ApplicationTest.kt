@@ -193,6 +193,7 @@ class ApplicationTest {
               "sourceClock": "UNKNOWN",
               "receivedAtUnixNs": 1800000000000000000,
               "dataOrigin": "UNKNOWN",
+              "units": {},
               "payload": {"ranges": [0.5, 1.0, 1.5]}
             }
         """.trimIndent()
