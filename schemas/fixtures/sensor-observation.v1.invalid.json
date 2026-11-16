@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "messageType": "sensor.observation",
+  "robotId": "lab-robot-01",
+  "sourceId": "run-2026-11-16-a",
+  "sequence": 42,
+  "topic": "imu/data",
+  "messageTypeName": "sensor_msgs/msg/Imu",
+  "messageEncoding": "cdr",
+  "schemaName": "sensor_msgs/msg/Imu",
+  "schemaEncoding": "ros2msg",
+  "sourceTimestampUnixNs": null,
+  "sourceClock": "ROS_TIME",
+  "receptionTimestampUnixNs": 1794810000000000100,
+  "frameId": null,
+  "units": {},
+  "dataOrigin": "PHYSICAL_SENSOR",
+  "payload": {
+    "type": "mcap-reference",
+    "artifactId": "artifact-imu-01",
+    "channelId": 2,
+    "messageIndex": 42
+  }
+}

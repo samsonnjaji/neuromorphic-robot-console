@@ -28,6 +28,26 @@ CASES = (
         ROOT / "schemas/fixtures/edge-recording-manifest.v2.valid.json",
         ROOT / "schemas/fixtures/edge-recording-manifest.v2.invalid.json",
     ),
+    (
+        ROOT / "schemas/sensor-observation.v1.schema.json",
+        ROOT / "schemas/fixtures/sensor-observation.v1.valid.json",
+        ROOT / "schemas/fixtures/sensor-observation.v1.invalid.json",
+    ),
+    (
+        ROOT / "schemas/sensor-observation.v1.schema.json",
+        ROOT / "schemas/fixtures/sensor-observation.v1.inline.valid.json",
+        ROOT / "schemas/fixtures/sensor-observation.v1.invalid.json",
+    ),
+    (
+        ROOT / "schemas/sensor-observation.v1.schema.json",
+        ROOT / "schemas/fixtures/sensor-observation.v1.valid.json",
+        ROOT / "schemas/fixtures/sensor-observation.v1.invalid.json",
+    ),
+    (
+        ROOT / "schemas/sensor-observation.v1.schema.json",
+        ROOT / "schemas/fixtures/sensor-observation.v1.inline.valid.json",
+        ROOT / "schemas/fixtures/sensor-observation.v1.invalid.json",
+    ),
 )
 OPENAPI_PATH = ROOT / "docs/api/openapi.json"
 

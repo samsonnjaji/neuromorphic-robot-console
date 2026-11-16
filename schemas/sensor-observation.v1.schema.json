@@ -1,0 +1,107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nrc.example/schemas/sensor-observation.v1.schema.json",
+  "title": "NRC Sensor Observation Envelope v1",
+  "description": "A single sensor-topic observation with explicit timestamp, frame, unit, origin and payload-reference semantics. This is not an aggregated robot-state snapshot.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "messageType",
+    "robotId",
+    "sourceId",
+    "sequence",
+    "topic",
+    "messageTypeName",
+    "messageEncoding",
+    "schemaName",
+    "schemaEncoding",
+    "sourceTimestampUnixNs",
+    "sourceClock",
+    "receptionTimestampUnixNs",
+    "frameId",
+    "units",
+    "dataOrigin",
+    "payload"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "messageType": { "const": "sensor.observation" },
+    "robotId": { "type": "string", "minLength": 1, "maxLength": 255 },
+    "sourceId": { "type": "string", "minLength": 1, "maxLength": 255 },
+    "sequence": { "type": "integer", "minimum": 0 },
+    "topic": {
+      "type": "string",
+      "pattern": "^/[A-Za-z_][A-Za-z0-9_]*(?:/[A-Za-z_][A-Za-z0-9_]*)*$"
+    },
+    "messageTypeName": { "type": "string", "minLength": 1, "maxLength": 255 },
+    "messageEncoding": { "type": "string", "minLength": 1, "maxLength": 64 },
+    "schemaName": { "type": ["string", "null"], "maxLength": 255 },
+    "schemaEncoding": { "type": ["string", "null"], "maxLength": 64 },
+    "sourceTimestampUnixNs": {
+      "type": ["integer", "null"],
+      "minimum": 0
+    },
+    "sourceClock": {
+      "type": "string",
+      "enum": ["ROS_TIME", "SYSTEM_TIME", "UNKNOWN"]
+    },
+    "receptionTimestampUnixNs": { "type": "integer", "minimum": 1 },
+    "frameId": { "type": ["string", "null"], "maxLength": 255 },
+    "units": {
+      "type": "object",
+      "description": "Explicit unit labels keyed by field path; do not infer units from numeric values.",
+      "additionalProperties": { "type": "string", "minLength": 1, "maxLength": 64 }
+    },
+    "dataOrigin": {
+      "type": "string",
+      "enum": ["PHYSICAL_SENSOR", "SIMULATED", "DATASET", "UNKNOWN"]
+    },
+    "payload": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type", "encoding", "data"],
+          "properties": {
+            "type": { "const": "inline" },
+            "encoding": { "const": "base64" },
+            "data": { "type": "string", "contentEncoding": "base64" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type", "encoding", "data"],
+          "properties": {
+            "type": { "const": "inline" },
+            "encoding": { "const": "json" },
+            "data": { "type": "object" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type", "artifactId", "channelId", "messageIndex"],
+          "properties": {
+            "type": { "const": "mcap-reference" },
+            "artifactId": { "type": "string", "minLength": 1 },
+            "channelId": { "type": "integer", "minimum": 0 },
+            "messageIndex": { "type": "integer", "minimum": 0 }
+          }
+        }
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "sourceTimestampUnixNs": { "type": "null" } },
+        "required": ["sourceTimestampUnixNs"]
+      },
+      "then": {
+        "properties": { "sourceClock": { "const": "UNKNOWN" } }
+      }
+    }
+  ]
+}
