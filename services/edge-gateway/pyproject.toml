@@ -7,7 +7,7 @@ name = "nrc-edge-gateway"
 version = "0.1.0"
 description = "Read-only MCAP recording inspection and ingestion for NRC"
 requires-python = ">=3.12"
-dependencies = ["mcap>=1.2,<2"]
+dependencies = ["mcap==1.6.0"]
 
 [project.optional-dependencies]
 test = ["jsonschema==4.23.0"]
