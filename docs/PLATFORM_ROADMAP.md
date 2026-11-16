@@ -74,7 +74,8 @@ This roadmap sequences platform work so that every phase produces a usable, test
 - [x] Preserve MCAP publish and log timestamps separately in nanoseconds, with channel message counts and sequence ranges.
 - [x] Generate a versioned provenance manifest with explicit data origin and recorded-ingestion mode; upload the original MCAP plus manifest through the verified artifact workflow.
 - [ ] Complete the local gateway-to-Ktor/RustFS synthetic MCAP smoke test.
-- [ ] Implement explicitly configured, read-only ROS 2 subscriptions.
+- [ ] Complete read-only ROS 2 bag capture through the rosbag2 MCAP storage plugin (PR #18; CI pending).
+- [x] Define Sensor Observation Envelope v1 to preserve per-topic source/reception timestamps, frame IDs, units, payload references and origin without padding RobotTelemetry (contract in PR #18; CI pending).
 - [ ] Decode selected ROS 2 message types and preserve source timestamps, frame IDs, units and provenance.
 - [ ] Add bounded live buffering, explicit backpressure/drop metrics and reconnect behavior.
 - [ ] Support ROS bag import and validate one real sensor recording end-to-end.
