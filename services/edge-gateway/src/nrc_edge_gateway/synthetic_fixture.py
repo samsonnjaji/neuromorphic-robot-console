@@ -41,6 +41,7 @@ def create_synthetic_mcap(
             metadata={
                 "data_origin": "SIMULATED",
                 "fixture": "synthetic",
+                "offered_qos_profiles": "[]",
             },
         )
 
