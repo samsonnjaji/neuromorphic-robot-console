@@ -1,7 +1,7 @@
 # NRC Platform Architecture
 
 **Status:** Target architecture, accepted and being implemented in validated stages  
-**Current baseline:** Kotlin Multiplatform core, Android/desktop simulator clients, Ktor API MVP, PostgreSQL experiment/run/recording/artifact metadata, S3-compatible artifact upload with background cleanup, validated local desktop relay, and Python offline MCAP inspection/ingestion v1 (PR #16 merged; CI Run #116 passed)  
+**Current baseline:** Kotlin Multiplatform core, Android/desktop simulator clients, Ktor API MVP, PostgreSQL experiment/run/recording/artifact metadata, S3-compatible artifact upload with background cleanup, validated local desktop relay, and Python offline MCAP inspection/ingestion v1 plus manifest v2 provenance (PRs #16–#17 merged; CI Runs #116 and #191 passed)  
 **Architecture principle:** one shared robotics intelligence and experiment model, multiple clients and deployment modes.
 
 ## 1. Product boundary
@@ -104,7 +104,7 @@ The clients must not connect directly to databases or inference workers.
 
 ### C. NRC Edge Gateway — robot connectivity
 
-**Current implementation:** a separate Python package at `services/edge-gateway` provides offline MCAP inspection, provenance indexing, experiment/recording registration and verified artifact upload. **Planned extension:** a live read-only ROS 2 process, initially Python unless driver/runtime requirements justify another implementation.
+**Current implementation:** a separate Python package at `services/edge-gateway` provides offline MCAP inspection, provenance indexing, experiment/recording registration and verified artifact upload. **Current extension in PR #18:** a read-only rosbag2/MCAP capture adapter with explicit topic allowlists and bounded cache. It records raw MCAP and ingests it after capture; it does not yet decode arbitrary CDR or stream live dashboard telemetry.
 
 Implemented in MCAP ingestion v1:
 - Validate MCAP framing and index channels, topics, message encodings and available schema metadata.
@@ -120,7 +120,7 @@ Planned live-gateway responsibilities:
 - Add bounded buffering, explicit backpressure/drop metrics and reconnect behavior.
 - Report device identity, connection state and software version.
 
-Planned integrations include ROS 2, ROS bag, event cameras, LiDAR, RGB cameras, radar and IMU. MCAP payload decoding and live ROS 2 subscriptions are not implemented in v1. The gateway is read-only; motion commands and remote actuation are explicitly outside the initial release.
+Planned integrations include event cameras, LiDAR, RGB cameras, radar and IMU. The initial ROS 2 capture adapter uses rosbag2's MCAP recorder; direct message decoding and live telemetry streaming remain future work. The gateway is read-only; motion commands and remote actuation are explicitly outside the initial release.
 
 ### D. NRC Inference Runtime — model execution
 
@@ -201,6 +201,8 @@ Robot registry, authenticated users/organisations, model registry, dataset regis
 
 ### Versioned contracts
 
+- Sensor Observation Envelope v1 is a separate per-topic contract. It does not replace the aggregated RobotTelemetry snapshot and does not yet have an API route.
+
 The v1 telemetry envelope and experiment manifest are stored under `schemas/`. Positive and negative fixtures are checked by `scripts/validate_schemas.py` in GitHub Actions. The Ktor API also decodes the typed Kotlin serialization envelope and applies stream/schema-version/sequence checks. The JSON Schema documents remain the cross-language wire-contract reference.
 
 ## 6. Deployment modes
@@ -277,7 +279,9 @@ neuromorphic-robot-console/
 | Local PostgreSQL Docker Compose setup | Implemented |
 | Authentication and organisation access controls | Planned |
 | S3-compatible recording storage | Implemented; CI verified, local smoke test pending |
-| Offline MCAP inspection and verified artifact ingestion | Implemented; CI Run #116 passed; local gateway-to-API/RustFS smoke test pending |
+| Offline MCAP inspection and artifact ingestion client | Implemented; PR #16 and CI Run #116 passed; local end-to-end smoke test pending |
+| Read-only ROS 2 capture via rosbag2/MCAP | In progress in PR #18; CI and WSL ROS 2 validation pending |
+| Sensor Observation Envelope v1 | Contract added in PR #18; API route and adapters not implemented |
 | Live ROS 2 subscriptions and message decoding | Planned |
 | Python inference workers | Planned |
 | Web client | Planned |
