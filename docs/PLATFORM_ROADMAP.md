@@ -74,6 +74,7 @@ This roadmap sequences platform work so that every phase produces a usable, test
 - [x] Preserve MCAP publish and log timestamps separately in nanoseconds, with channel message counts and sequence ranges.
 - [x] Generate a versioned provenance manifest with explicit data origin and recorded-ingestion mode; upload the original MCAP plus manifest through the verified artifact workflow.
 - [ ] Complete the local gateway-to-Ktor/RustFS synthetic MCAP smoke test.
+- [x] Add a separate bounded sensor-observation v1 contract and API/WebSocket fan-out; preserve source clock domain and do not synthesize missing snapshot fields.
 - [ ] Implement explicitly configured, read-only ROS 2 subscriptions.
 - [ ] Decode selected ROS 2 message types and preserve source timestamps, frame IDs, units and provenance.
 - [ ] Add bounded live buffering, explicit backpressure/drop metrics and reconnect behavior.
