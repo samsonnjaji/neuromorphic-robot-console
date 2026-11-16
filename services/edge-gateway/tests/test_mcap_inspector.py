@@ -7,14 +7,14 @@ import unittest
 from pathlib import Path
 
 from jsonschema import Draft202012Validator
-from mcap.writer import Writer
+from mcap.writer import CompressionType, Writer
 
 from nrc_edge_gateway.mcap_inspector import McapInspector, McapValidationError
 
 
 def write_fixture(path: Path) -> None:
     with path.open("wb") as output:
-        writer = Writer(output)
+        writer = Writer(output, compression=CompressionType.NONE)
         writer.start(profile="ros2", library="nrc-edge-gateway-tests")
         schema_id = writer.register_schema(
             name="std_msgs/msg/String",
@@ -80,10 +80,10 @@ class McapInspectorTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "zero-publish.mcap"
             with path.open("wb") as output:
-                writer = Writer(output)
+                writer = Writer(output, compression=CompressionType.NONE)
                 writer.start(profile="ros2", library="test")
                 channel_id = writer.register_channel(
-                    topic="/robot/imu", message_encoding="cdr"
+                    topic="/robot/imu", message_encoding="cdr", schema_id=0
                 )
                 writer.add_message(
                     channel_id,
