@@ -114,6 +114,31 @@ class IngestWorkflowTests(unittest.TestCase):
             self.assertEqual(final_run_transition["status"], "COMPLETED")
             self.assertFalse(final_run_transition["resultSummary"]["inferenceExecuted"])
 
+    def test_existing_experiment_uses_its_existing_scenario(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "dataset.mcap"
+            write_fixture(path)
+            api = FakeApi()
+
+            result = NrcMcapIngestor(api).ingest(
+                path,
+                robot_id="dataset-robot",
+                experiment_id="existing-experiment",
+                data_origin="DATASET",
+            )
+
+            self.assertEqual(result.experiment_id, "existing-experiment")
+            self.assertEqual(result.manifest["dataOrigin"], "DATASET")
+            self.assertFalse(
+                any(path_value == "/api/v1/experiments" for path_value, _ in api.requests)
+            )
+            self.assertTrue(
+                any(
+                    path_value == "/api/v1/experiments/existing-experiment/runs"
+                    for path_value, _ in api.requests
+                )
+            )
+
     def test_invalid_file_fails_before_creating_api_records(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "bad.mcap"
