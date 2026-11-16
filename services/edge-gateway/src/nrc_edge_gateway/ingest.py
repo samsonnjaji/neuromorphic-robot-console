@@ -84,7 +84,10 @@ class NrcMcapIngestor:
 
         run: dict[str, Any] | None = None
         recording: dict[str, Any] | None = None
-        recording_is_open = False
+        run_started = False
+        recording_created = False
+        recording_started = False
+        recording_finalized = False
 
         try:
             run = self.api.post_json(
@@ -104,6 +107,7 @@ class NrcMcapIngestor:
             self.api.post_json(
                 f"/api/v1/runs/{run_id}/transition", {"status": "RUNNING"}
             )
+            run_started = True
 
             recording = self.api.post_json(
                 f"/api/v1/runs/{run_id}/recordings",
@@ -114,11 +118,12 @@ class NrcMcapIngestor:
                 },
             )
             recording_id = str(recording["id"])
+            recording_created = True
             self.api.post_json(
                 f"/api/v1/recordings/{recording_id}/transition",
                 {"status": "RECORDING"},
             )
-            recording_is_open = True
+            recording_started = True
             self.api.post_json(
                 f"/api/v1/recordings/{recording_id}/transition",
                 {
@@ -127,7 +132,8 @@ class NrcMcapIngestor:
                     "metadata": manifest,
                 },
             )
-            recording_is_open = False
+            recording_started = False
+            recording_finalized = True
 
             with tempfile.TemporaryDirectory(prefix="nrc-edge-manifest-") as directory:
                 manifest_path = Path(directory) / f"{path.name}.manifest.json"
@@ -171,21 +177,23 @@ class NrcMcapIngestor:
         except Exception as failure:
             reason = str(failure).strip() or failure.__class__.__name__
             reason = reason[:512]
-            if recording is not None and recording_is_open:
+            if recording is not None and recording_created and not recording_finalized:
                 recording_id = str(recording.get("id", ""))
                 if recording_id:
+                    recording_status = "FAILED" if recording_started else "CANCELLED"
                     _best_effort(
                         self.api,
                         f"/api/v1/recordings/{recording_id}/transition",
-                        {"status": "FAILED", "failureReason": reason},
+                        {"status": recording_status, "failureReason": reason},
                     )
             if run is not None:
                 run_id = str(run.get("id", ""))
                 if run_id:
+                    run_status = "FAILED" if run_started else "CANCELLED"
                     _best_effort(
                         self.api,
                         f"/api/v1/runs/{run_id}/transition",
-                        {"status": "FAILED", "failureReason": reason},
+                        {"status": run_status, "failureReason": reason},
                     )
             raise
 
