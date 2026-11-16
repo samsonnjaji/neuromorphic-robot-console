@@ -114,7 +114,7 @@ class McapInspectorTests(unittest.TestCase):
             self.assertEqual(manifest["ingestionMode"], "RECORDED")
             schema_path = (
                 Path(__file__).resolve().parents[3]
-                / "schemas/edge-recording-manifest.v1.schema.json"
+                / "schemas/edge-recording-manifest.v2.schema.json"
             )
             schema = json.loads(schema_path.read_text(encoding="utf-8"))
             Draft202012Validator(schema).validate(manifest)
