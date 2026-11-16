@@ -3,8 +3,8 @@
 **Last updated:** 2026-11-16  
 **Repository:** https://github.com/samsonnjaji/neuromorphic-robot-console  
 **Base branch:** `main`  
-**Main commit:** `b31478332fe08924630cb83a73ae9ca94de4ac26`  
-**Active development branch:** none; PR #17 is merged. Next increment: local gateway smoke validation, then read-only ROS 2 capture design.  
+**Main commit:** `9f060271e0eafac078cb20c64748e42f4630d487`  
+**Active development branch:** `feat/edge-ros2-bag-capture` (remote implementation in progress; PR pending). PRs #16 and #17 are merged.  
 **Artifact storage merge commit:** `3300de07779bc8c06329eeae97ee5c5ea8bca3ef`  
 **Artifact cleanup merge commit:** `e4c945f6aa9f8eaccfc816da48ac48ca92675e3e`  
 **Merged PRs:** [PR #14 — S3-compatible artifact storage](https://github.com/samsonnjaji/neuromorphic-robot-console/pull/14); [PR #15 — automatic abandoned-upload cleanup](https://github.com/samsonnjaji/neuromorphic-robot-console/pull/15); [PR #16 — offline MCAP ingestion gateway](https://github.com/samsonnjaji/neuromorphic-robot-console/pull/16); [PR #17 — provenance v2 and synthetic MCAP fixture](https://github.com/samsonnjaji/neuromorphic-robot-console/pull/17)  
@@ -111,6 +111,8 @@ No remote robot actuation in the initial release. Any later control plane needs 
 
 ### Edge Gateway v1 and provenance v2 — PRs #16 and #17 merged
 
+PR #16 added offline MCAP ingestion. PR #17 preserved manifest v1 and introduced manifest v2 with explicit data origin, a synthetic fixture generator and an accidental-misclassification guard. PR #17 CI Run #191 passed. The local API/RustFS and synthetic MCAP end-to-end smoke tests remain pending.
+
 PR #16 delivers the offline MCAP importer. PR #17 adds immutable `edge-recording-manifest.v2`, separating source origin (`PHYSICAL_SENSOR`, `SIMULATED`, `DATASET`, `UNKNOWN`) from ingestion mode (`RECORDED`), plus a labelled synthetic MCAP fixture generator with ROS 2 CDR and QoS metadata. The original v1 schema remains unchanged for historical compatibility. PR #17 merged as `b31478332fe08924630cb83a73ae9ca94de4ac26`; GitHub Actions Run #191 passed.
 
 Branch: `feat/edge-mcap-ingestion-v1`.
@@ -136,6 +138,13 @@ This is offline MCAP ingestion only. Live ROS 2 subscriptions, CDR payload decod
 - NRC is not a safety-rated robot controller.
 
 ## 5. Immediate next tasks
+
+1. Complete PR #18 CI for the read-only rosbag2/MCAP capture adapter and Sensor Observation Envelope v1.
+2. Merge only after the full CI workflow passes.
+3. When the workstation is available, pull current main and run the PostgreSQL V4/RustFS and synthetic MCAP importer smoke tests.
+4. In WSL/Linux with ROS 2 and the MCAP storage plugin installed, validate one real, explicitly allowlisted sensor recording.
+5. Add selected typed decoders and a future API ingestion path for Sensor Observation Envelope; do not coerce raw messages into RobotTelemetry.
+6. Only then proceed to live streaming, inference workers and scientific model comparisons.
 
 1. When the user's workstation is available, ask them to pull the latest `main` into the Windows checkout. Preserve the existing PostgreSQL and RustFS volumes; keep host port 5435 if native PostgreSQL owns 5432.
 2. Run the combined local storage smoke test for Flyway V4, RustFS upload/download, SHA-256 verification and abandoned-upload cleanup.
@@ -212,6 +221,11 @@ nrc-edge ingest .\\synthetic-demo.mcap --api-url http://127.0.0.1:8080 --robot-i
 The import must return an experiment ID, run ID, recording-session ID, MCAP artifact ID and manifest artifact ID. The CLI only exits successfully after both artifacts are `VERIFIED` and the run reaches `COMPLETED`. This is a synthetic integration fixture, not a physical robot test. Preserve the local PostgreSQL/RustFS volumes throughout.
 
 ## 8. Key files
+
+- `schemas/sensor-observation.v1.schema.json`
+- `docs/SENSOR_OBSERVATION_CONTRACT.md`
+- `docs/ADR/ADR-003-sensor-observation-envelope.md`
+- `services/edge-gateway/src/nrc_edge_gateway/ros2_capture.py`
 
 - `docs/PLATFORM_ARCHITECTURE.md` — target and current architecture.
 - `docs/PLATFORM_ROADMAP.md` — milestones and completion state.
