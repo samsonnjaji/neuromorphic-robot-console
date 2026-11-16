@@ -104,7 +104,7 @@ The clients must not connect directly to databases or inference workers.
 
 ### C. NRC Edge Gateway — robot connectivity
 
-**Current implementation:** a separate Python package at `services/edge-gateway` provides offline MCAP inspection, provenance indexing, experiment/recording registration and verified artifact upload. **Current extension in PR #18:** a read-only rosbag2/MCAP capture adapter with explicit topic allowlists and bounded cache. It records raw MCAP and ingests it after capture; it does not yet decode arbitrary CDR or stream live dashboard telemetry.
+**Current implementation:** a separate Python package at `services/edge-gateway` provides offline MCAP inspection, provenance indexing, experiment/recording registration and verified artifact upload. **Current extension in PR #19:** a read-only rosbag2/MCAP capture adapter with explicit topic allowlists and bounded cache. It records raw MCAP and ingests it after capture; it does not yet decode arbitrary CDR or stream live dashboard telemetry.
 
 Implemented in MCAP ingestion v1:
 - Validate MCAP framing and index channels, topics, message encodings and available schema metadata.
@@ -282,9 +282,9 @@ neuromorphic-robot-console/
 | Authentication and organisation access controls | Planned |
 | S3-compatible recording storage | Implemented; CI verified, local smoke test pending |
 | Offline MCAP inspection and artifact ingestion client | Implemented; PR #16 and CI Run #116 passed; local end-to-end smoke test pending |
-| Read-only ROS 2 capture via rosbag2/MCAP | In progress in PR #18; CI and WSL ROS 2 validation pending |
-| Sensor Observation Envelope v1 | Contract and fixtures in PR #18; CI pending; no API route yet |
-| Sensor Observation Envelope v1 | Contract added in PR #18; API route and adapters not implemented |
+| Read-only ROS 2 capture via rosbag2/MCAP | In progress in PR #19; CI and WSL ROS 2 validation pending |
+| Sensor Observation Envelope v1 | Contract and fixtures in PR #19; CI pending; no API route yet |
+| Sensor Observation Envelope v1 | Contract added in PR #19; API route and adapters not implemented |
 | Live ROS 2 subscriptions and message decoding | Planned |
 | Python inference workers | Planned |
 | Web client | Planned |
